@@ -110,19 +110,25 @@ class _CalculatorPageState extends State<CalculatorPage>
     switch (key) {
       case 'AC':
         _clear();
+        return;
       case '⌫':
         _backspace();
+        return;
       case '=':
         _resolve();
+        return;
       case '±':
         _toggleSign();
+        return;
       case '+':
       case '−':
       case '×':
       case '÷':
         _appendOperator(key);
+        return;
       default:
         _appendNumber(key);
+        return;
     }
   }
 
