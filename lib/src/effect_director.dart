@@ -29,14 +29,12 @@ class EffectPlan {
 }
 
 class EffectDirector {
-  EffectDirector({Random? random, int Function(int max)? nextInt})
-    : _random = random ?? Random(),
-      _nextInt = nextInt;
+  EffectDirector({Random? random, this.nextInt}) : _random = random ?? Random();
 
   final Random _random;
-  final int Function(int max)? _nextInt;
+  final int Function(int max)? nextInt;
 
-  int _roll(int max) => _nextInt?.call(max) ?? _random.nextInt(max);
+  int _roll(int max) => nextInt?.call(max) ?? _random.nextInt(max);
 
   EffectPlan planFor(String formattedResult) {
     final canonical = formattedResult.replaceAll(',', '');

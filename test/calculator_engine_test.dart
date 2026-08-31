@@ -33,7 +33,24 @@ void main() {
       final formatted = engine.format(engine.evaluate('1÷100000000000'));
       expect(formatted, isNot('0'));
       expect(formatted.contains('e'), isTrue);
-      // 全消灯が誤爆しないことを保証するため、EffectDirector側でも検証可能
+    });
+
+    test('指数表記の結果を次の計算に使える', () {
+      final tiny = engine.format(engine.evaluate('1÷100000000000'));
+      expect(tiny, contains('e'));
+      expect(engine.evaluate('$tiny+1'), closeTo(1.00000000001, 1e-15));
+    });
+
+    test('指数部の+符号も解釈できる', () {
+      expect(engine.evaluate('1E+3+2'), 1002);
+    });
+
+    test('不正な指数表記はエラー', () {
+      expect(() => engine.evaluate('1e+'), throwsA(isA<CalculatorException>()));
+      expect(
+        () => engine.evaluate('e3+1'),
+        throwsA(isA<CalculatorException>()),
+      );
     });
 
     test('1/3は10桁で丸め', () {
@@ -41,7 +58,6 @@ void main() {
     });
 
     test('0.99999999995は10桁で丸め', () {
-      // toStringAsFixed(10)で 0.9999999999（四捨五入で繰り上がらない）
       expect(engine.format(0.99999999995), '0.9999999999');
     });
 
