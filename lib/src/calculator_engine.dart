@@ -33,25 +33,17 @@ class CalculatorEngine {
 
     if (value == 0) return '0';
 
-    // 10桁固定小数で整形。小数部の不要な0を除去。
     final fixed = value.toStringAsFixed(10);
     final trimmed = fixed
         .replaceFirst(RegExp(r'0+$'), '')
         .replaceFirst(RegExp(r'\.$'), '');
 
-    // trimmedが0/-0だが元が非ゼロ = 微小値が丸めで潰れたケース。
-    // 指数表記へフォールバックして「0誤表示」を防ぐ（全消灯の誤爆も防止）。
     if ((trimmed == '0' || trimmed == '-0') && value != 0) {
-      // 指数表記で有効桁を保持し、仮数部の不要な0を除去
       final exp = value.toStringAsExponential(10);
       final parts = exp.split('e');
-      var mantissa = parts[0]
+      final mantissa = parts[0]
           .replaceFirst(RegExp(r'0+$'), '')
           .replaceFirst(RegExp(r'\.$'), '');
-      // "1." のようなケースを "1" に（上記で処理済みだが念のため）
-      if (mantissa.endsWith('.')) {
-        mantissa = mantissa.substring(0, mantissa.length - 1);
-      }
       final exponent = parts[1].replaceFirst(RegExp(r'^\+'), '');
       return '${mantissa}e$exponent';
     }
@@ -82,7 +74,25 @@ class CalculatorEngine {
         continue;
       }
 
+      if (char == 'e' || char == 'E') {
+        final number = buffer.toString();
+        if (number.isEmpty || number.contains(RegExp(r'[eE]'))) {
+          throw const CalculatorException('数字の形式が不正です');
+        }
+        buffer.write(char);
+        continue;
+      }
+
       if (_isOperator(char)) {
+        final number = buffer.toString();
+        final isExponentSign =
+            (char == '+' || char == '-') &&
+            (number.endsWith('e') || number.endsWith('E'));
+        if (isExponentSign) {
+          buffer.write(char);
+          continue;
+        }
+
         if (char == '-' && (i == 0 || _isOperator(input[i - 1]))) {
           buffer.write(char);
           continue;
@@ -148,19 +158,15 @@ class CalculatorEngine {
       switch (token) {
         case '+':
           stack.add(left + right);
-          break;
         case '-':
           stack.add(left - right);
-          break;
         case '*':
           stack.add(left * right);
-          break;
         case '/':
           if (right == 0) {
             throw const CalculatorException('0では割れません');
           }
           stack.add(left / right);
-          break;
       }
     }
 
