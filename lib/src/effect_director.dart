@@ -30,8 +30,11 @@ class EffectPlan {
 
 class EffectDirector {
   EffectDirector({Random? random, int Function(int max)? nextInt})
-    : _random = random ?? Random(),
-      _nextInt = nextInt;
+      : this._(random: random, nextInt: nextInt);
+
+  EffectDirector._({Random? random, int Function(int max)? nextInt})
+      : _random = random ?? Random(),
+        _nextInt = nextInt;
 
   final Random _random;
   final int Function(int max)? _nextInt;
