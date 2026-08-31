@@ -15,7 +15,11 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test
+      - name: Verify formatting
+        run: |
+          dart format lib test
+          git diff --check
+          git diff --exit-code
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
