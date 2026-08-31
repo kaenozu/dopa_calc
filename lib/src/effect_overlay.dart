@@ -193,6 +193,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                           current: _beatIndex,
                           total: plan.beats.length,
                           accent: accent,
+                          reduceMotion: _reduceMotion,
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
@@ -207,7 +208,8 @@ class _EffectOverlayState extends State<EffectOverlay>
                                 color: accent.withValues(alpha: 0.72),
                                 width: 1.5,
                               ),
-                              backgroundColor: Colors.black.withValues(alpha: 0.5),
+                              backgroundColor:
+                                  Colors.black.withValues(alpha: 0.5),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               textStyle: const TextStyle(
                                 fontWeight: FontWeight.w900,
@@ -223,7 +225,9 @@ class _EffectOverlayState extends State<EffectOverlay>
                     IgnorePointer(
                       child: ColoredBox(
                         color: Colors.white.withValues(
-                          alpha: (flash * 0.72).clamp(0.0, 0.72),
+                          alpha: (flash * 0.72)
+                              .clamp(0.0, 0.72)
+                              .toDouble(),
                         ),
                       ),
                     ),
@@ -404,7 +408,9 @@ class _RankBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pulse = reduceMotion ? 1.0 : 0.92 + math.sin(phase * math.pi * 2) * 0.08;
+    final pulse = reduceMotion
+        ? 1.0
+        : 0.92 + math.sin(phase * math.pi * 2) * 0.08;
     return Transform.scale(
       scale: pulse,
       child: Container(
@@ -496,7 +502,9 @@ class _HeadlineCard extends StatelessWidget {
       EffectRank.gekiatsu => 9.0,
       EffectRank.premium => 10.0,
     };
-    final tilt = reduceMotion ? 0.0 : math.sin(phase * math.pi * 4) * 0.006;
+    final tilt = reduceMotion
+        ? 0.0
+        : math.sin(phase * math.pi * 4) * 0.006;
 
     return Transform.rotate(
       angle: tilt,
@@ -551,7 +559,8 @@ class _HeadlineCard extends StatelessWidget {
                     ShaderMask(
                       blendMode: BlendMode.srcIn,
                       shaderCallback: (bounds) {
-                        final rotation = reduceMotion ? 0.0 : phase * math.pi * 2;
+                        final rotation =
+                            reduceMotion ? 0.0 : phase * math.pi * 2;
                         return LinearGradient(
                           colors: [
                             Colors.white,
@@ -596,7 +605,10 @@ class _HeadlineCard extends StatelessWidget {
                 height: 1.25,
                 shadows: [
                   const Shadow(color: Colors.black, blurRadius: 8),
-                  Shadow(color: accent.withValues(alpha: 0.6), blurRadius: 18),
+                  Shadow(
+                    color: accent.withValues(alpha: 0.6),
+                    blurRadius: 18,
+                  ),
                 ],
               ),
             ),
@@ -612,11 +624,13 @@ class _ProgressPips extends StatelessWidget {
     required this.current,
     required this.total,
     required this.accent,
+    required this.reduceMotion,
   });
 
   final int current;
   final int total;
   final Color accent;
+  final bool reduceMotion;
 
   @override
   Widget build(BuildContext context) {
@@ -625,16 +639,17 @@ class _ProgressPips extends StatelessWidget {
       children: List.generate(total, (index) {
         final active = index <= current;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 140),
           width: active ? 28 : 12,
           height: 7,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: active ? accent : Colors.white24,
             borderRadius: BorderRadius.circular(99),
-            boxShadow: active
-                ? [BoxShadow(color: accent, blurRadius: 14)]
-                : null,
+            boxShadow:
+                active ? [BoxShadow(color: accent, blurRadius: 14)] : null,
           ),
         );
       }),
@@ -661,22 +676,16 @@ class _CelebrationPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final impact = _intensityFactor(intensity);
     final rankFactor = 0.45 + rank.index * 0.25;
-    final particleCount = (16 + 22 * rank.index + 16 * impact).round().clamp(
-          16,
-          96,
-        );
-    final rayCount = (12 + 12 * rank.index).clamp(12, 48);
+    final particleCount = (16 + 22 * rank.index + 16 * impact)
+        .round()
+        .clamp(16, 96)
+        .toInt();
+    final rayCount = (12 + 12 * rank.index).clamp(12, 48).toInt();
     final center = size.center(Offset.zero);
 
     _drawRings(canvas, center, size, impact);
     _drawRays(canvas, center, size, rayCount, impact);
-    _drawParticles(
-      canvas,
-      size,
-      particleCount,
-      impact,
-      rankFactor,
-    );
+    _drawParticles(canvas, size, particleCount, impact, rankFactor);
     _drawScanLines(canvas, size, impact);
   }
 
@@ -758,9 +767,13 @@ class _CelebrationPainter extends CustomPainter {
       final drift = math.sin((phase * speed + baseY) * math.pi * 2);
       final x = (baseX + drift * 0.035 * rankFactor) * size.width;
       final y = ((baseY - phase * speed * 0.24) % 1) * size.height;
-      final radius = 1.6 + _unitNoise(seed * 13 + 4) * (4.5 + rank.index);
-      final alpha = (0.25 + _unitNoise(seed * 17 + 9) * 0.62) * impact;
-      paint.color = _particleColor(seed).withValues(alpha: alpha.clamp(0, 1));
+      final radius =
+          1.6 + _unitNoise(seed * 13 + 4) * (4.5 + rank.index);
+      final alpha =
+          (0.25 + _unitNoise(seed * 17 + 9) * 0.62) * impact;
+      paint.color = _particleColor(seed).withValues(
+        alpha: alpha.clamp(0.0, 1.0).toDouble(),
+      );
 
       if (i % 5 == 0) {
         _drawSpark(canvas, Offset(x, y), radius * 1.9, paint);
@@ -789,7 +802,9 @@ class _CelebrationPainter extends CustomPainter {
       ..strokeWidth = 1
       ..color = Colors.white.withValues(alpha: 0.035 * impact);
     const spacing = 18.0;
-    for (var y = (phase * spacing) % spacing; y < size.height; y += spacing) {
+    for (var y = (phase * spacing) % spacing;
+        y < size.height;
+        y += spacing) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
