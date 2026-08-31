@@ -1,0 +1,41 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.lock
+!pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+
+# Freebuff / local tooling
+.freebuff/
+*.freebuff
+
+# Secrets / Keystore - NEVER commit
+.env
+.env.*
+*.env
+*.jks
+*.keystore
+*.p12
+*.pem
+key.properties
+local.properties
+google-services.json
+GoogleService-Info.plist
+service-account.json
+*.mobileprovision
+
+# OS
+.DS_Store
