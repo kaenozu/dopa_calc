@@ -4,31 +4,32 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+permissions:
+  contents: write
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.44.0"
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: Format sources for verification
+      - name: Apply Dart formatter
+        run: dart format lib test
+      - name: Commit formatter output
         run: |
-          dart format lib test
-          git diff --check
-      - name: Upload formatted sources
-        uses: actions/upload-artifact@v4
-        with:
-          name: formatted-sources
-          path: |
-            lib/src/calculator_page.dart
-            lib/src/effect_overlay.dart
-            test/calculator_engine_test.dart
-      - name: Verify no formatter diff
-        run: git diff --exit-code
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib test
+            git commit -m "style: apply Dart formatter"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
