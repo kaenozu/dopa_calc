@@ -46,10 +46,7 @@ void main() {
     });
 
     test('不正な指数表記はエラー', () {
-      expect(
-        () => engine.evaluate('1e+'),
-        throwsA(isA<CalculatorException>()),
-      );
+      expect(() => engine.evaluate('1e+'), throwsA(isA<CalculatorException>()));
       expect(
         () => engine.evaluate('e3+1'),
         throwsA(isA<CalculatorException>()),

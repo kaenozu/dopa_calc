@@ -131,7 +131,7 @@ class _EffectOverlayState extends State<EffectOverlay>
               final flash = _reduceMotion
                   ? 0.0
                   : (1 - Curves.easeOut.transform(_flashController.value)) *
-                      impact;
+                        impact;
               final shakeX = _reduceMotion
                   ? 0.0
                   : math.sin(phase * math.pi * 14) * 5.5 * impact;
@@ -208,8 +208,9 @@ class _EffectOverlayState extends State<EffectOverlay>
                                 color: accent.withValues(alpha: 0.72),
                                 width: 1.5,
                               ),
-                              backgroundColor:
-                                  Colors.black.withValues(alpha: 0.5),
+                              backgroundColor: Colors.black.withValues(
+                                alpha: 0.5,
+                              ),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               textStyle: const TextStyle(
                                 fontWeight: FontWeight.w900,
@@ -225,9 +226,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                     IgnorePointer(
                       child: ColoredBox(
                         color: Colors.white.withValues(
-                          alpha: (flash * 0.72)
-                              .clamp(0.0, 0.72)
-                              .toDouble(),
+                          alpha: (flash * 0.72).clamp(0.0, 0.72).toDouble(),
                         ),
                       ),
                     ),
@@ -367,10 +366,7 @@ class _EdgeFrame extends StatelessWidget {
         padding: const EdgeInsets.all(5),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(
-              color: accent.withValues(alpha: 0.68),
-              width: 3,
-            ),
+            border: Border.all(color: accent.withValues(alpha: 0.68), width: 3),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -428,10 +424,7 @@ class _RankBanner extends StatelessWidget {
             horizontal: BorderSide(color: accent, width: 2),
           ),
           boxShadow: [
-            BoxShadow(
-              color: accent.withValues(alpha: 0.46),
-              blurRadius: 24,
-            ),
+            BoxShadow(color: accent.withValues(alpha: 0.46), blurRadius: 24),
           ],
         ),
         child: Column(
@@ -502,9 +495,7 @@ class _HeadlineCard extends StatelessWidget {
       EffectRank.gekiatsu => 9.0,
       EffectRank.premium => 10.0,
     };
-    final tilt = reduceMotion
-        ? 0.0
-        : math.sin(phase * math.pi * 4) * 0.006;
+    final tilt = reduceMotion ? 0.0 : math.sin(phase * math.pi * 4) * 0.006;
 
     return Transform.rotate(
       angle: tilt,
@@ -514,10 +505,7 @@ class _HeadlineCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: accent.withValues(alpha: 0.74),
-            width: 2,
-          ),
+          border: Border.all(color: accent.withValues(alpha: 0.74), width: 2),
           boxShadow: [
             BoxShadow(
               color: accent.withValues(alpha: 0.58),
@@ -559,15 +547,11 @@ class _HeadlineCard extends StatelessWidget {
                     ShaderMask(
                       blendMode: BlendMode.srcIn,
                       shaderCallback: (bounds) {
-                        final rotation =
-                            reduceMotion ? 0.0 : phase * math.pi * 2;
+                        final rotation = reduceMotion
+                            ? 0.0
+                            : phase * math.pi * 2;
                         return LinearGradient(
-                          colors: [
-                            Colors.white,
-                            accent,
-                            Colors.white,
-                            accent,
-                          ],
+                          colors: [Colors.white, accent, Colors.white, accent],
                           stops: const [0, 0.32, 0.62, 1],
                           transform: GradientRotation(rotation),
                         ).createShader(bounds);
@@ -605,10 +589,7 @@ class _HeadlineCard extends StatelessWidget {
                 height: 1.25,
                 shadows: [
                   const Shadow(color: Colors.black, blurRadius: 8),
-                  Shadow(
-                    color: accent.withValues(alpha: 0.6),
-                    blurRadius: 18,
-                  ),
+                  Shadow(color: accent.withValues(alpha: 0.6), blurRadius: 18),
                 ],
               ),
             ),
@@ -648,8 +629,9 @@ class _ProgressPips extends StatelessWidget {
           decoration: BoxDecoration(
             color: active ? accent : Colors.white24,
             borderRadius: BorderRadius.circular(99),
-            boxShadow:
-                active ? [BoxShadow(color: accent, blurRadius: 14)] : null,
+            boxShadow: active
+                ? [BoxShadow(color: accent, blurRadius: 14)]
+                : null,
           ),
         );
       }),
@@ -689,12 +671,7 @@ class _CelebrationPainter extends CustomPainter {
     _drawScanLines(canvas, size, impact);
   }
 
-  void _drawRings(
-    Canvas canvas,
-    Offset center,
-    Size size,
-    double impact,
-  ) {
+  void _drawRings(Canvas canvas, Offset center, Size size, double impact) {
     final maxRadius = math.sqrt(
       size.width * size.width + size.height * size.height,
     );
@@ -705,14 +682,8 @@ class _CelebrationPainter extends CustomPainter {
 
     for (var i = 0; i < 4; i++) {
       final progress = (phase + i / 4) % 1;
-      paint.color = accent.withValues(
-        alpha: (1 - progress) * 0.34 * impact,
-      );
-      canvas.drawCircle(
-        center,
-        maxRadius * (0.08 + progress * 0.58),
-        paint,
-      );
+      paint.color = accent.withValues(alpha: (1 - progress) * 0.34 * impact);
+      canvas.drawCircle(center, maxRadius * (0.08 + progress * 0.58), paint);
     }
   }
 
@@ -767,13 +738,11 @@ class _CelebrationPainter extends CustomPainter {
       final drift = math.sin((phase * speed + baseY) * math.pi * 2);
       final x = (baseX + drift * 0.035 * rankFactor) * size.width;
       final y = ((baseY - phase * speed * 0.24) % 1) * size.height;
-      final radius =
-          1.6 + _unitNoise(seed * 13 + 4) * (4.5 + rank.index);
-      final alpha =
-          (0.25 + _unitNoise(seed * 17 + 9) * 0.62) * impact;
-      paint.color = _particleColor(seed).withValues(
-        alpha: alpha.clamp(0.0, 1.0).toDouble(),
-      );
+      final radius = 1.6 + _unitNoise(seed * 13 + 4) * (4.5 + rank.index);
+      final alpha = (0.25 + _unitNoise(seed * 17 + 9) * 0.62) * impact;
+      paint.color = _particleColor(
+        seed,
+      ).withValues(alpha: alpha.clamp(0.0, 1.0).toDouble());
 
       if (i % 5 == 0) {
         _drawSpark(canvas, Offset(x, y), radius * 1.9, paint);
@@ -802,9 +771,7 @@ class _CelebrationPainter extends CustomPainter {
       ..strokeWidth = 1
       ..color = Colors.white.withValues(alpha: 0.035 * impact);
     const spacing = 18.0;
-    for (var y = (phase * spacing) % spacing;
-        y < size.height;
-        y += spacing) {
+    for (var y = (phase * spacing) % spacing; y < size.height; y += spacing) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
