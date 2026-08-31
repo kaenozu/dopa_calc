@@ -158,15 +158,19 @@ class CalculatorEngine {
       switch (token) {
         case '+':
           stack.add(left + right);
+          break;
         case '-':
           stack.add(left - right);
+          break;
         case '*':
           stack.add(left * right);
+          break;
         case '/':
           if (right == 0) {
             throw const CalculatorException('0では割れません');
           }
           stack.add(left / right);
+          break;
       }
     }
 
