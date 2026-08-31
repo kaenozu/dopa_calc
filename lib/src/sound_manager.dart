@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'effect_director.dart';
 
 class SoundManager {
-  final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player;
+
+  SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
   Future<void> playBeat(EffectRank rank, int beatIndex) async {
     final asset = _assetFor(rank, beatIndex);
@@ -24,6 +26,8 @@ class SoundManager {
   }
 
   Future<void> dispose() => _player.dispose();
+
+  String assetFor(EffectRank rank, int beatIndex) => _assetFor(rank, beatIndex);
 
   String _assetFor(EffectRank rank, int beatIndex) {
     switch (rank) {

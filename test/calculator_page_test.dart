@@ -30,20 +30,8 @@ Future<void> _skipEffectIfPresent(WidgetTester tester) async {
 }
 
 String _displayText(WidgetTester tester) {
-  // _Display内のFittedBoxが表示テキストを保持。KeyのFittedBoxではない。
-  final fittedBoxes = tester.widgetList<FittedBox>(find.byType(FittedBox));
-  // 最後に見つかるFittedBoxはDisplayのもの（Gridの前はDisplayが1つだけ）
-  // より確実にDisplayを探すため、祖先がContainer且つサイズが大きいものを優先
-  for (final fb in fittedBoxes) {
-    final text = (fb.child as Text).data ?? '';
-    // Displayは式/結果を表示（"READY"/"CALC"/"RESULT"以外）
-    // 単一キー文字以外の長い文字列を持つFittedBoxをDisplayとみなす
-    if (text == 'READY' || text == 'CALC' || text == 'RESULT') continue;
-    // キーは単一文字（0-9, +, −, ×, ÷, ., ACなど）だがDisplayは式なので
-    // ここでは最後のFittedBoxをDisplayとする簡易実装
-  }
-  final last = fittedBoxes.last;
-  return (last.child as Text).data ?? '';
+  final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox).first);
+  return (fittedBox.child as Text).data ?? '';
 }
 
 void main() {
