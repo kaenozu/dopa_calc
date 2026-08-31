@@ -59,6 +59,28 @@ void main() {
       expect(_displayText(tester), '3+4');
     });
 
+    testWidgets('指数表記の結果から連続計算できる', (tester) async {
+      await tester.pumpWidget(const DopaCalculatorApp());
+      await _tapSequence(tester, [
+        '1',
+        '÷',
+        '1',
+        '00',
+        '00',
+        '00',
+        '00',
+        '00',
+        '0',
+        '=',
+      ]);
+      await _skipEffectIfPresent(tester);
+      expect(_displayText(tester), '1e-11');
+
+      await _tapSequence(tester, ['+', '1', '=']);
+      await _skipEffectIfPresent(tester);
+      expect(_displayText(tester), '1');
+    });
+
     testWidgets('±で符号反転', (tester) async {
       await tester.pumpWidget(const DopaCalculatorApp());
       await _tapSequence(tester, ['5', '±']);
@@ -94,6 +116,15 @@ void main() {
       await _tapKey(tester, '1');
       final after = _displayText(tester);
       expect(after.length, before.length);
+    });
+
+    testWidgets('複数文字キーでも48文字上限を超えない', (tester) async {
+      await tester.pumpWidget(const DopaCalculatorApp());
+      for (var i = 0; i < 47; i++) {
+        await _tapKey(tester, '1');
+      }
+      await _tapKey(tester, '00');
+      expect(_displayText(tester).length, 47);
     });
 
     testWidgets('演出SKIPで即結果表示', (tester) async {
