@@ -59,7 +59,23 @@ class _CalculatorPageState extends State<CalculatorPage>
       duration: const Duration(milliseconds: 520),
       lowerBound: 0.92,
       upperBound: 1.08,
-    )..repeat(reverse: true);
+      value: 1.0,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // アクセシビリティ設定の変更に追従
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (disableAnimations && _pulseController.isAnimating) {
+      _stopPulse();
+    } else if (!disableAnimations &&
+        _isResolving &&
+        !_pulseController.isAnimating) {
+      _startPulse();
+    }
   }
 
   @override
@@ -68,6 +84,22 @@ class _CalculatorPageState extends State<CalculatorPage>
     _pulseController.dispose();
     unawaited(_soundManager.dispose());
     super.dispose();
+  }
+
+  void _startPulse() {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (disableAnimations) return;
+    if (!_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  void _stopPulse() {
+    if (_pulseController.isAnimating) {
+      _pulseController.stop();
+    }
+    _pulseController.value = 1.0;
   }
 
   void _press(String key) {
@@ -102,6 +134,7 @@ class _CalculatorPageState extends State<CalculatorPage>
 
   void _clear() {
     _resultTimer?.cancel();
+    _stopPulse();
     setState(() {
       _expression = '';
       _display = '0';
@@ -121,6 +154,20 @@ class _CalculatorPageState extends State<CalculatorPage>
   }
 
   void _appendOperator(String operator) {
+    if (_showResult) {
+      // 結果表示後の演算子は結果を左辺として継続。エラー表示時はクリア。
+      final isErrorDisplay = _display != _expression;
+      setState(() {
+        if (isErrorDisplay) {
+          _expression = operator == '−' ? '−' : '';
+          _display = _expression.isEmpty ? '0' : _expression;
+        }
+        _showResult = false;
+      });
+      if (isErrorDisplay) return;
+      if (_expression.isEmpty) return;
+    }
+
     if (_expression.isEmpty) {
       if (operator == '−') {
         setState(() {
@@ -134,6 +181,7 @@ class _CalculatorPageState extends State<CalculatorPage>
     final last = _expression[_expression.length - 1];
     const operators = {'+', '−', '×', '÷'};
     setState(() {
+      _showResult = false;
       if (operators.contains(last)) {
         _expression =
             '${_expression.substring(0, _expression.length - 1)}$operator';
@@ -212,11 +260,13 @@ class _CalculatorPageState extends State<CalculatorPage>
         _showResult = false;
         _isResolving = true;
       });
+      _startPulse();
 
       _resultTimer?.cancel();
       _resultTimer = Timer(plan.duration, () {
         if (!mounted) return;
         HapticFeedback.vibrate();
+        _stopPulse();
         setState(() {
           _display = formatted;
           _expression = formatted;
@@ -239,6 +289,7 @@ class _CalculatorPageState extends State<CalculatorPage>
   void _skipEffect() {
     if (!_isResolving) return;
     _resultTimer?.cancel();
+    _stopPulse();
     try {
       final result = _engine.evaluate(_expression);
       setState(() {
@@ -288,7 +339,7 @@ class _CalculatorPageState extends State<CalculatorPage>
                         const gap = 10.0;
                         final keyWidth =
                             (constraints.maxWidth - gap * (columns - 1)) /
-                                columns;
+                            columns;
                         final keyHeight =
                             (constraints.maxHeight - gap * (rows - 1)) / rows;
 
@@ -296,11 +347,11 @@ class _CalculatorPageState extends State<CalculatorPage>
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            mainAxisSpacing: gap,
-                            crossAxisSpacing: gap,
-                            childAspectRatio: keyWidth / keyHeight,
-                          ),
+                                crossAxisCount: columns,
+                                mainAxisSpacing: gap,
+                                crossAxisSpacing: gap,
+                                childAspectRatio: keyWidth / keyHeight,
+                              ),
                           itemCount: _keys.length,
                           itemBuilder: (context, index) {
                             final key = _keys[index];
@@ -352,10 +403,7 @@ class _Header extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        TextButton(
-          onPressed: onReset,
-          child: const Text('RESET'),
-        ),
+        TextButton(onPressed: onReset, child: const Text('RESET')),
       ],
     );
   }
@@ -437,8 +485,8 @@ class _CalcKey extends StatelessWidget {
     final background = _isOperator
         ? const Color(0xFFFFC400)
         : _isUtility
-            ? const Color(0xFF343946)
-            : const Color(0xFF1A1E27);
+        ? const Color(0xFF343946)
+        : const Color(0xFF1A1E27);
     final foreground = _isOperator ? Colors.black : Colors.white;
 
     return Material(
@@ -516,7 +564,10 @@ class _EffectOverlayState extends State<_EffectOverlay> {
       EffectRank.gekiatsu => const Color(0xFFFF3B30),
       EffectRank.premium => const Color(0xFFFFE600),
     };
-    final shake = plan.rank.index >= EffectRank.gekiatsu.index;
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final shake =
+        !disableAnimations && plan.rank.index >= EffectRank.gekiatsu.index;
 
     return Positioned.fill(
       child: Material(
@@ -524,7 +575,8 @@ class _EffectOverlayState extends State<_EffectOverlay> {
         child: AnimatedBuilder(
           animation: widget.pulse,
           builder: (context, child) {
-            final pulseDelta = widget.pulse.value - 1;
+            final pulseDelta = disableAnimations ? 0.0 : widget.pulse.value - 1;
+            final scale = disableAnimations ? 1.0 : widget.pulse.value;
             return Stack(
               children: [
                 Positioned.fill(
@@ -533,7 +585,9 @@ class _EffectOverlayState extends State<_EffectOverlay> {
                       gradient: RadialGradient(
                         colors: [
                           accent.withValues(
-                            alpha: 0.25 + pulseDelta.abs() * 1.8,
+                            alpha: disableAnimations
+                                ? 0.25
+                                : 0.25 + pulseDelta.abs() * 1.8,
                           ),
                           Colors.transparent,
                         ],
@@ -546,11 +600,15 @@ class _EffectOverlayState extends State<_EffectOverlay> {
                   child: Transform.translate(
                     offset: Offset(shake ? pulseDelta * 38 : 0, 0),
                     child: Transform.scale(
-                      scale: widget.pulse.value,
+                      scale: scale,
                       child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 160),
+                        duration: Duration(
+                          milliseconds: disableAnimations ? 0 : 160,
+                        ),
                         transitionBuilder: (child, animation) =>
-                            ScaleTransition(scale: animation, child: child),
+                            disableAnimations
+                            ? child
+                            : ScaleTransition(scale: animation, child: child),
                         child: Column(
                           key: ValueKey(_beatIndex),
                           mainAxisSize: MainAxisSize.min,
@@ -559,8 +617,9 @@ class _EffectOverlayState extends State<_EffectOverlay> {
                               beat.headline,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize:
-                                    plan.rank == EffectRank.normal ? 38 : 52,
+                                fontSize: plan.rank == EffectRank.normal
+                                    ? 38
+                                    : 52,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 4,
                                 color: accent,
@@ -575,8 +634,9 @@ class _EffectOverlayState extends State<_EffectOverlay> {
                             ),
                             const SizedBox(height: 14),
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 28),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 28,
+                              ),
                               child: Text(
                                 beat.subline,
                                 textAlign: TextAlign.center,

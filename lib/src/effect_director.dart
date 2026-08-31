@@ -20,10 +20,8 @@ class EffectPlan {
   final EffectRank rank;
   final List<EffectBeat> beats;
 
-  Duration get duration => beats.fold(
-        Duration.zero,
-        (total, beat) => total + beat.duration,
-      );
+  Duration get duration =>
+      beats.fold(Duration.zero, (total, beat) => total + beat.duration);
 }
 
 class EffectDirector {
