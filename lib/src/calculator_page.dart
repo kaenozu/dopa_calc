@@ -337,7 +337,7 @@ class _CalculatorPageState extends State<CalculatorPage>
                         const gap = 10.0;
                         final keyWidth =
                             (constraints.maxWidth - gap * (columns - 1)) /
-                                columns;
+                            columns;
                         final keyHeight =
                             (constraints.maxHeight - gap * (rows - 1)) / rows;
 
@@ -345,11 +345,11 @@ class _CalculatorPageState extends State<CalculatorPage>
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            mainAxisSpacing: gap,
-                            crossAxisSpacing: gap,
-                            childAspectRatio: keyWidth / keyHeight,
-                          ),
+                                crossAxisCount: columns,
+                                mainAxisSpacing: gap,
+                                crossAxisSpacing: gap,
+                                childAspectRatio: keyWidth / keyHeight,
+                              ),
                           itemCount: _keys.length,
                           itemBuilder: (context, index) {
                             final key = _keys[index];
@@ -458,9 +458,7 @@ class _Display extends StatelessWidget {
                 fontWeight: FontWeight.w900,
                 color: isResult ? const Color(0xFFFFF06A) : Colors.white,
                 shadows: isResult
-                    ? const [
-                        Shadow(blurRadius: 20, color: Color(0xFFFF8A00)),
-                      ]
+                    ? const [Shadow(blurRadius: 20, color: Color(0xFFFF8A00))]
                     : null,
               ),
             ),
@@ -485,8 +483,8 @@ class _CalcKey extends StatelessWidget {
     final background = _isOperator
         ? const Color(0xFFFFC400)
         : _isUtility
-            ? const Color(0xFF343946)
-            : const Color(0xFF1A1E27);
+        ? const Color(0xFF343946)
+        : const Color(0xFF1A1E27);
     final foreground = _isOperator ? Colors.black : Colors.white;
 
     return Semantics(
