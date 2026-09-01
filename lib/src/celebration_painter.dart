@@ -32,17 +32,6 @@ class CelebrationPainter extends CustomPainter {
 
     _drawRings(canvas, center, size, impact);
     _drawRays(canvas, center, size, rayCount, impact);
-    if (impact >= 0.85) {
-      _drawComets(
-        canvas,
-        size,
-        rank == EffectRank.premium ? 14 : 8,
-        impact,
-      );
-    }
-    if (rank == EffectRank.premium && impact >= 0.9) {
-      _drawLightning(canvas, size, impact);
-    }
     _drawParticles(canvas, size, particleCount, impact, rankFactor);
     _drawScanLines(canvas, size, impact);
   }
@@ -95,70 +84,6 @@ class CelebrationPainter extends CustomPainter {
         ),
         paint,
       );
-    }
-  }
-
-  void _drawComets(Canvas canvas, Size size, int count, double impact) {
-    final paint = Paint()
-      ..strokeCap = StrokeCap.round
-      ..blendMode = BlendMode.plus;
-
-    for (var i = 0; i < count; i++) {
-      final seed = i + beatIndex * 211;
-      final base = _unitNoise(seed * 3 + 5);
-      final lane = _unitNoise(seed * 7 + 11);
-      final speed = 0.75 + _unitNoise(seed * 13 + 17) * 0.9;
-      final travel = (base + phase * speed) % 1.0;
-      final x = (travel * 1.35 - 0.18) * size.width;
-      final y = ((lane + travel * 0.22) % 1.0) * size.height;
-      final length = 18 + _unitNoise(seed * 19 + 23) * 46;
-      final glow = 0.35 + _unitNoise(seed * 29 + 31) * 0.55;
-
-      paint
-        ..strokeWidth = 1.5 + glow * 2.6
-        ..color = (i.isEven ? Colors.white : accent).withValues(
-          alpha: ((0.28 + glow * 0.42) * impact)
-              .clamp(0.0, 0.9)
-              .toDouble(),
-        );
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(x - length, y + length * 0.34),
-        paint,
-      );
-    }
-  }
-
-  void _drawLightning(Canvas canvas, Size size, double impact) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..blendMode = BlendMode.plus;
-    final phaseStep = (phase * 16).floor();
-
-    for (var bolt = 0; bolt < 3; bolt++) {
-      final baseX = size.width * (0.18 + bolt * 0.32);
-      final path = Path()..moveTo(baseX, -8);
-      for (var segment = 0; segment < 8; segment++) {
-        final y = size.height * (segment + 1) / 8;
-        final jitter =
-            (_unitNoise(
-                  (bolt + 1) * 193 + segment * 31 + phaseStep * 17,
-                ) -
-                0.5) *
-            size.width *
-            0.18;
-        final x = (baseX + jitter).clamp(0.0, size.width).toDouble();
-        path.lineTo(x, y);
-      }
-
-      paint
-        ..strokeWidth = 1.5 + impact * 1.8
-        ..color = (bolt.isEven ? Colors.white : accent).withValues(
-          alpha: (0.18 + impact * 0.16).clamp(0.0, 0.42).toDouble(),
-        );
-      canvas.drawPath(path, paint);
     }
   }
 

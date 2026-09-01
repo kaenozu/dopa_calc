@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'celebration_painter.dart';
 import 'effect_director.dart';
 import 'effect_widgets.dart';
+import 'pachinko_accent_painter.dart';
+import 'pachinko_widgets.dart';
 
 class EffectOverlay extends StatefulWidget {
   const EffectOverlay({
@@ -98,12 +100,9 @@ class _EffectOverlayState extends State<EffectOverlay>
     _beatTimer = Timer(beat.duration, () {
       if (!mounted) return;
 
-      // 最後のビート到達: 結果表示 or 即時完了
       if (_beatIndex >= widget.plan.beats.length - 1) {
         if (widget.resultText != null) {
           setState(() => _showingResult = true);
-          // 結果を1.5秒表示してからオーバーレイを閉じる。
-          // このフェーズでもSKIP導線は維持する。
           _resultTimer = Timer(const Duration(milliseconds: 1500), () {
             if (mounted) widget.onSkip();
           });
@@ -162,6 +161,17 @@ class _EffectOverlayState extends State<EffectOverlay>
                   RepaintBoundary(
                     child: CustomPaint(
                       painter: CelebrationPainter(
+                        rank: finalRank,
+                        intensity: intensity,
+                        beatIndex: plan.beats.length,
+                        phase: phase,
+                        accent: accent,
+                      ),
+                    ),
+                  ),
+                  RepaintBoundary(
+                    child: CustomPaint(
+                      painter: PachinkoAccentPainter(
                         rank: finalRank,
                         intensity: intensity,
                         beatIndex: plan.beats.length,
@@ -256,6 +266,18 @@ class _EffectOverlayState extends State<EffectOverlay>
                     RepaintBoundary(
                       child: CustomPaint(
                         painter: CelebrationPainter(
+                          rank: effectiveRank,
+                          intensity: beat.intensity,
+                          beatIndex: _beatIndex,
+                          phase: phase,
+                          accent: accent,
+                        ),
+                      ),
+                    ),
+                  if (!isDark)
+                    RepaintBoundary(
+                      child: CustomPaint(
+                        painter: PachinkoAccentPainter(
                           rank: effectiveRank,
                           intensity: beat.intensity,
                           beatIndex: _beatIndex,
