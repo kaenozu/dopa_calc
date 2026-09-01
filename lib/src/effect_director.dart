@@ -6,7 +6,16 @@ enum EffectRank { normal, chance, gekiatsu, premium }
 enum EffectIntensity { low, medium, high, extreme }
 
 /// 遊技機らしい予告・役物の出し分け。
-enum EffectCue { standard, preAlert, symbolLock, blackout, revival, jackpot }
+enum EffectCue {
+  standard,
+  preAlert,
+  symbolLock,
+  pushPrompt,
+  shutter,
+  blackout,
+  revival,
+  jackpot,
+}
 
 /// ランクごとの外観テーマ。
 class RankTheme {
@@ -120,7 +129,7 @@ class EffectBeat {
   /// このビートで表示するランク。nullならPlanのrankを使用。
   final EffectRank? displayRank;
 
-  /// 先バレ・図柄ロック・復活・JACKPOTなどの演出種別。
+  /// 先バレ・図柄ロック・PUSH・シャッター・復活などの演出種別。
   final EffectCue cue;
 
   /// trueのとき、全画面暗転＋最小限のエフェクト（ハズレ偽装用）。
@@ -155,52 +164,62 @@ class EffectDirector {
       return EffectPlan(
         rank: EffectRank.premium,
         beats: [
-          // 段階1: NORMALに見せる。違和感だけ。
           EffectBeat(
             headline: '・・・・・・',
             subline: '何かがおかしい',
-            duration: const Duration(milliseconds: 1200),
+            duration: const Duration(milliseconds: 900),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
           ),
-          // 段階2: 先バレ＋CHANCEへ昇格。
           EffectBeat(
             headline: '先 読 み 発 生',
             subline: '数字がざわついています',
-            duration: const Duration(milliseconds: 1500),
+            duration: const Duration(milliseconds: 1100),
             intensity: EffectIntensity.medium,
             displayRank: EffectRank.chance,
             cue: EffectCue.preAlert,
           ),
-          // 段階3: 7図柄ロック＋激熱へ昇格。
           EffectBeat(
             headline: '超・確・定',
             subline: '7系プレミアム確認中',
-            duration: const Duration(milliseconds: 1800),
+            duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.symbolLock,
           ),
-          // ハズレ偽装: 一瞬暗転・無音。
+          EffectBeat(
+            headline: '押 せ',
+            subline: 'PUSHで運命を決めろ',
+            duration: const Duration(milliseconds: 900),
+            intensity: EffectIntensity.high,
+            displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.pushPrompt,
+          ),
+          EffectBeat(
+            headline: '役 物 閉 鎖',
+            subline: '逃げ道を封鎖しています',
+            duration: const Duration(milliseconds: 650),
+            intensity: EffectIntensity.extreme,
+            displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.shutter,
+          ),
           EffectBeat(
             headline: '…………',
             subline: '',
-            duration: const Duration(milliseconds: 800),
+            duration: const Duration(milliseconds: 650),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
             cue: EffectCue.blackout,
             dark: true,
           ),
-          // 復活: 役物を落とす。
           EffectBeat(
             headline: '復 活',
             subline: 'まだ終わってない',
-            duration: const Duration(milliseconds: 1200),
+            duration: const Duration(milliseconds: 1100),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.revival,
           ),
-          // クライマックス: 777ロック＋PREMIUM RUSH解禁。
           EffectBeat(
             headline: 'ドパ計算RUSH',
             subline: '答えは最初から決まっている',
@@ -249,7 +268,7 @@ class EffectDirector {
           EffectBeat(
             headline: '違 和 感',
             subline: 'ただの計算では終わらない',
-            duration: const Duration(milliseconds: 1200),
+            duration: const Duration(milliseconds: 900),
             intensity: EffectIntensity.medium,
             displayRank: EffectRank.chance,
             cue: EffectCue.preAlert,
@@ -257,15 +276,31 @@ class EffectDirector {
           EffectBeat(
             headline: '激 熱',
             subline: '期待度 92%（演出上）',
-            duration: const Duration(milliseconds: 1500),
+            duration: const Duration(milliseconds: 1100),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.symbolLock,
           ),
           EffectBeat(
+            headline: '押 せ',
+            subline: 'PUSHでプレミアムを呼べ',
+            duration: const Duration(milliseconds: 800),
+            intensity: EffectIntensity.high,
+            displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.pushPrompt,
+          ),
+          EffectBeat(
+            headline: '役 物 閉 鎖',
+            subline: 'まだ結果は見せません',
+            duration: const Duration(milliseconds: 550),
+            intensity: EffectIntensity.extreme,
+            displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.shutter,
+          ),
+          EffectBeat(
             headline: '…………',
             subline: '',
-            duration: const Duration(milliseconds: 800),
+            duration: const Duration(milliseconds: 650),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
             cue: EffectCue.blackout,
@@ -274,7 +309,7 @@ class EffectDirector {
           EffectBeat(
             headline: '復 活',
             subline: 'まだだ！！',
-            duration: const Duration(milliseconds: 1200),
+            duration: const Duration(milliseconds: 1000),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.revival,
@@ -282,7 +317,7 @@ class EffectDirector {
           EffectBeat(
             headline: '超 計 算',
             subline: 'PREMIUM',
-            duration: const Duration(milliseconds: 2600),
+            duration: const Duration(milliseconds: 2300),
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.premium,
             cue: EffectCue.jackpot,
@@ -297,21 +332,28 @@ class EffectDirector {
           EffectBeat(
             headline: 'CHANCE',
             subline: '期待しても計算結果は変わりません',
-            duration: const Duration(milliseconds: 1200),
+            duration: const Duration(milliseconds: 1000),
             intensity: EffectIntensity.high,
             cue: EffectCue.preAlert,
           ),
           EffectBeat(
             headline: '激 熱',
             subline: '期待度 92%（演出上）',
-            duration: const Duration(milliseconds: 1800),
+            duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.extreme,
             cue: EffectCue.symbolLock,
           ),
           EffectBeat(
+            headline: '押 せ',
+            subline: 'PUSHで復活を呼び込め',
+            duration: const Duration(milliseconds: 900),
+            intensity: EffectIntensity.high,
+            cue: EffectCue.pushPrompt,
+          ),
+          EffectBeat(
             headline: 'まだだ！！',
             subline: '無駄にもう一回煽ります',
-            duration: const Duration(milliseconds: 1800),
+            duration: const Duration(milliseconds: 1700),
             intensity: EffectIntensity.high,
             cue: EffectCue.revival,
           ),
