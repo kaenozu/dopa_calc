@@ -7,6 +7,7 @@ import 'celebration_painter.dart';
 import 'effect_director.dart';
 import 'effect_widgets.dart';
 import 'pachinko_accent_painter.dart';
+import 'pachinko_machine_widgets.dart';
 import 'pachinko_widgets.dart';
 
 class EffectOverlay extends StatefulWidget {
@@ -180,6 +181,16 @@ class _EffectOverlayState extends State<EffectOverlay>
                       ),
                     ),
                   ),
+                  PachinkoMachineOverlay(
+                    cue: finalRank == EffectRank.premium
+                        ? EffectCue.jackpot
+                        : EffectCue.symbolLock,
+                    rank: finalRank,
+                    accent: accent,
+                    phase: phase,
+                    impact: impact,
+                    reduceMotion: motionDisabled,
+                  ),
                   if (!motionDisabled)
                     SweepBeam(accent: accent, phase: phase, impact: impact),
                   EdgeFrame(accent: accent, impact: impact),
@@ -285,6 +296,15 @@ class _EffectOverlayState extends State<EffectOverlay>
                           accent: accent,
                         ),
                       ),
+                    ),
+                  if (!isDark)
+                    PachinkoMachineOverlay(
+                      cue: beat.cue,
+                      rank: effectiveRank,
+                      accent: accent,
+                      phase: phase,
+                      impact: impact,
+                      reduceMotion: motionDisabled,
                     ),
                   if (!motionDisabled)
                     SweepBeam(accent: accent, phase: phase, impact: impact),
