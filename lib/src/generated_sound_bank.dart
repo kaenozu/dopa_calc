@@ -47,12 +47,7 @@ class GeneratedSoundBank {
 
   static double _preAlertSample(double t, double duration) {
     final progress = t / duration;
-    final envelope = _attackRelease(
-      t,
-      duration,
-      attack: 0.006,
-      release: 0.035,
-    );
+    final envelope = _attackRelease(t, duration, attack: 0.006, release: 0.035);
     // 先バレらしい短い上昇チャープ。位相積分で周波数を滑らかに上げる。
     final phase = 2 * math.pi * (1450 * t + 2100 * t * t);
     final carrier = math.sin(phase);
@@ -87,12 +82,7 @@ class GeneratedSoundBank {
   }
 
   static double _revivalSample(double t, double duration) {
-    final envelope = _attackRelease(
-      t,
-      duration,
-      attack: 0.004,
-      release: 0.08,
-    );
+    final envelope = _attackRelease(t, duration, attack: 0.004, release: 0.08);
     final impactWave = math.sin(2 * math.pi * 72 * t);
     final impactDecay = math.exp(-t * 10.0);
     final impact = impactWave * impactDecay * 0.55;
@@ -127,12 +117,7 @@ class GeneratedSoundBank {
     final sparkleDecay = math.exp(-math.max(0.0, t - 0.52) * 8.0);
     final sparkleGain = t > 0.52 ? 0.12 : 0.0;
     final sparkle = sparkleWave * sparkleDecay * sparkleGain;
-    final master = _attackRelease(
-      t,
-      duration,
-      attack: 0.005,
-      release: 0.10,
-    );
+    final master = _attackRelease(t, duration, attack: 0.005, release: 0.10);
     return (sample + sparkle) * master * 1.45;
   }
 
@@ -144,9 +129,7 @@ class GeneratedSoundBank {
   }) {
     final attackGain = attack <= 0 ? 1.0 : math.min(t / attack, 1.0);
     final remaining = duration - t;
-    final releaseGain = release <= 0
-        ? 1.0
-        : math.min(remaining / release, 1.0);
+    final releaseGain = release <= 0 ? 1.0 : math.min(remaining / release, 1.0);
     return math.max(0.0, math.min(attackGain, releaseGain));
   }
 
