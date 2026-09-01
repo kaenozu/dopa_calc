@@ -1,6 +1,7 @@
 import 'package:dopa_calc/src/effect_director.dart';
 import 'package:dopa_calc/src/effect_overlay.dart';
 import 'package:dopa_calc/src/effect_widgets.dart';
+import 'package:dopa_calc/src/pachinko_cinematic_widgets.dart';
 import 'package:dopa_calc/src/pachinko_machine_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,36 @@ EffectPlan _premiumPlan() {
         duration: Duration(seconds: 5),
         intensity: EffectIntensity.extreme,
         cue: EffectCue.jackpot,
+      ),
+    ],
+  );
+}
+
+EffectPlan _pushPlan() {
+  return const EffectPlan(
+    rank: EffectRank.gekiatsu,
+    beats: [
+      EffectBeat(
+        headline: '押 せ',
+        subline: 'PUSHで運命を決めろ',
+        duration: Duration(milliseconds: 900),
+        intensity: EffectIntensity.high,
+        cue: EffectCue.pushPrompt,
+      ),
+    ],
+  );
+}
+
+EffectPlan _shutterPlan() {
+  return const EffectPlan(
+    rank: EffectRank.premium,
+    beats: [
+      EffectBeat(
+        headline: '役 物 閉 鎖',
+        subline: '逃げ道を封鎖しています',
+        duration: Duration(milliseconds: 650),
+        intensity: EffectIntensity.extreme,
+        cue: EffectCue.shutter,
       ),
     ],
   );
@@ -117,9 +148,61 @@ void main() {
     expect(find.text('ドパ計算RUSH'), findsWidgets);
     expect(find.text('DOPA HEAT'), findsOneWidget);
     expect(find.byType(PachinkoMachineOverlay), findsOneWidget);
+    expect(find.byType(PachinkoCinematicOverlay), findsOneWidget);
     expect(find.text('777 JACKPOT'), findsOneWidget);
     expect(find.text('JACKPOT'), findsOneWidget);
+    expect(find.byKey(const Key('pachinko-revival-burst')), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('PUSH予告は3→2→1で進行しSKIPを隠さない', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(plan: _pushPlan(), disableAnimations: false),
+    );
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(find.byKey(const Key('pachinko-push-prompt')), findsOneWidget);
+    expect(find.text('PUSH'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('演出SKIP'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 330));
+    expect(find.text('2'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 330));
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('演出SKIP'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('シャッター演出は360x640でもoverflowせずSKIP可能', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var skipCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        plan: _shutterPlan(),
+        disableAnimations: false,
+        onSkip: () => skipCalls++,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 320));
+
+    expect(find.byKey(const Key('pachinko-shutter')), findsOneWidget);
+    expect(find.text('演出SKIP'), findsOneWidget);
+    await tester.tap(find.text('演出SKIP'));
+    await tester.pump();
+
+    expect(skipCalls, 1);
     expect(tester.takeException(), isNull);
   });
 
@@ -130,6 +213,7 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
     expect(find.byType(PachinkoMachineOverlay), findsOneWidget);
+    expect(find.byType(PachinkoCinematicOverlay), findsOneWidget);
     expect(find.text('777 JACKPOT'), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -192,6 +276,7 @@ void main() {
     expect(find.text('役 物 作 動'), findsOneWidget);
     expect(find.text('777 JACKPOT'), findsNothing);
     expect(find.text('JACKPOT'), findsNothing);
+    expect(find.byKey(const Key('pachinko-revival-burst')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -279,6 +364,7 @@ void main() {
     expect(find.text('DOPA HEAT'), findsNothing);
     expect(find.byType(EffectBackdrop), findsNothing);
     expect(find.byType(PachinkoMachineOverlay), findsNothing);
+    expect(find.byType(PachinkoCinematicOverlay), findsNothing);
 
     expect(tester.takeException(), isNull);
   });
