@@ -11,6 +11,18 @@ CI の widget/unit test で overflow・構造・Cue別SEマッピング・専用
 | 小型 Android（5.0インチ以下） | 360×640 | overflow確認 | ★★★ |
 | 高端 Android（Snapdragon 8系） | 1440×3200 | 基準値 | ★★ |
 
+## Debug演出診断パネル
+
+`flutter run` のdebug buildでは画面右上に `DEBUG FX` パネルを表示する。`kDebugMode` でガードしているためrelease UIには表示しない。
+
+- `FORCE PREMIUM`: 入力式を作らず `777` の強制PREMIUMを開始する。
+- `CUE`: 現在のEffectCueを表示する。
+- ログ: 演出開始からの相対時刻（ms）で `CUE` / `SE` / `HAPTIC` / `CTRL` を記録する。
+- `CLEAR`: ログと相対時計をリセットする。演出自体は停止しない。
+- パネル開閉ボタン: ログを隠して画面占有を減らす。
+
+実機では `CUE` の発火時刻に対して `SE` と `HAPTIC` が何ms後に出ているかを確認し、PUSH・シャッター・復活・JACKPOTの体感ズレを数値で記録する。
+
 ## フレーム時間目標
 
 | 指標 | 目標 | 許容 | ブロッカー |
@@ -50,12 +62,20 @@ CI の widget/unit test で overflow・構造・Cue別SEマッピング・専用
 | T-24 | 結果クライマックス | 長い指数表記でも画面内に収まり、1.5秒表示またはSKIPで終了する |
 | T-25 | ランク差 | CHANCEにはPUSHが出ず、激熱はPUSHまで、PREMIUMだけシャッター/JACKPOTへ到達する |
 | T-26 | 高強度描画 | 盤面ランプ・流星・稲妻・PUSH・シャッターを重ねてもフレーム時間目標を満たす |
+| T-27 | Debug診断時刻 | `FORCE PREMIUM` で8ビートを再現でき、各Cueに対するSE/Hapticの相対時刻をログで読み取れる |
 
 ## 測定方法
 
 ```bash
 flutter run --profile -d <device_id>
 # DevTools → Performance → 録画開始 → 7×1111= → 演出完了まで待機 → 停止
+```
+
+フレーム計測はprofile buildを使う。Cue/SE/Hapticのタイミング確認だけは診断パネルが必要なためdebug buildで実施する。
+
+```bash
+flutter run -d <device_id>
+# DEBUG FX → FORCE PREMIUM → ログの相対msを確認
 ```
 
 PUSH・シャッターは個別にフレームスパイクを確認し、平均値だけでなく1%ileとジャンク率も記録する。

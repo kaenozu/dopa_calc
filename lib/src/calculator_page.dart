@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -20,10 +21,16 @@ class _CalculatorPageState extends State<CalculatorPage>
     with SingleTickerProviderStateMixin {
   final _controller = CalculationController();
   final _director = EffectDirector();
-  final _effectPlayer = EffectPlayer();
 
+  late final EffectPlayer _effectPlayer;
   late final AnimationController _pulseController;
   EffectPlan? _activePlan;
+
+  final _debugClock = Stopwatch();
+  final List<_DebugEffectLogEntry> _debugLog = [];
+  var _debugCurrentCue = 'idle';
+  var _debugExpanded = false;
+  var _debugRefreshScheduled = false;
 
   static const _keys = <String>[
     'AC',
@@ -52,6 +59,12 @@ class _CalculatorPageState extends State<CalculatorPage>
   void initState() {
     super.initState();
     _controller.addListener(_onControllerChanged);
+    if (kDebugMode) {
+      _debugClock.start();
+    }
+    _effectPlayer = EffectPlayer(
+      diagnosticSink: kDebugMode ? _onEffectDiagnostic : null,
+    );
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 520),
@@ -141,6 +154,7 @@ class _CalculatorPageState extends State<CalculatorPage>
     _stopPulse();
     setState(() {
       _activePlan = null;
+      if (kDebugMode) _debugCurrentCue = 'idle';
     });
     _controller.clear();
   }
@@ -170,6 +184,26 @@ class _CalculatorPageState extends State<CalculatorPage>
     }
   }
 
+  void _handleBeat(EffectPlan plan, BeatEvent event) {
+    final cue = plan.beats[event.beatIndex].cue;
+    if (kDebugMode) {
+      _debugCurrentCue = cue.name;
+      _appendDebugLog(
+        'CUE',
+        '${event.beatIndex + 1}/${plan.beats.length} ${cue.name} '
+            '${plan.rankForBeat(event.beatIndex).name}',
+      );
+    }
+
+    unawaited(
+      _effectPlayer.playBeat(
+        plan.rankForBeat(event.beatIndex),
+        event,
+        cue: cue,
+      ),
+    );
+  }
+
   void _skipEffect() {
     if (!_controller.isResolving) return;
     unawaited(_effectPlayer.cancelPending());
@@ -177,6 +211,76 @@ class _CalculatorPageState extends State<CalculatorPage>
     _controller.finishResult(_controller.lastFormattedResult!);
     setState(() {
       _activePlan = null;
+      if (kDebugMode) _debugCurrentCue = 'idle';
+    });
+  }
+
+  // ── Debug実機診断 ─────────────────────────────────────────
+
+  void _debugForcePremium() {
+    if (!kDebugMode || _controller.isResolving) return;
+
+    unawaited(_effectPlayer.cancelPending());
+    _stopPulse();
+    _debugClock.reset();
+    _debugLog.clear();
+    _debugCurrentCue = 'preparing';
+
+    final plan = _director.planFor('777');
+    _controller.beginResolving('777');
+    setState(() {
+      _activePlan = plan;
+      _debugExpanded = true;
+    });
+    _appendDebugLog('TEST', 'FORCE PREMIUM result=777');
+    _startPulse();
+  }
+
+  void _onEffectDiagnostic(EffectDiagnosticEvent event) {
+    if (!kDebugMode) return;
+
+    final cue = event.cue?.name ?? '-';
+    final beat = event.beatIndex == null ? '-' : '${event.beatIndex! + 1}';
+    final channel = switch (event.kind) {
+      EffectDiagnosticKind.sound => 'SE',
+      EffectDiagnosticKind.haptic => 'HAPTIC',
+      EffectDiagnosticKind.control => 'CTRL',
+    };
+    _appendDebugLog(channel, 'b$beat $cue ${event.detail}');
+  }
+
+  void _appendDebugLog(String channel, String message) {
+    if (!kDebugMode) return;
+
+    _debugLog.insert(
+      0,
+      _DebugEffectLogEntry(
+        elapsedMilliseconds: _debugClock.elapsedMilliseconds,
+        channel: channel,
+        message: message,
+      ),
+    );
+    if (_debugLog.length > 14) {
+      _debugLog.removeRange(14, _debugLog.length);
+    }
+    _scheduleDebugRefresh();
+  }
+
+  void _scheduleDebugRefresh() {
+    if (_debugRefreshScheduled) return;
+    _debugRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _debugRefreshScheduled = false;
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _clearDebugLog() {
+    if (!kDebugMode) return;
+    setState(() {
+      _debugLog.clear();
+      _debugCurrentCue = _controller.isResolving ? _debugCurrentCue : 'idle';
+      _debugClock.reset();
     });
   }
 
@@ -244,16 +348,186 @@ class _CalculatorPageState extends State<CalculatorPage>
               EffectOverlay(
                 plan: plan,
                 pulse: _pulseController,
-                onBeat: (event) => unawaited(
-                  _effectPlayer.playBeat(
-                    plan.rankForBeat(event.beatIndex),
-                    event,
-                    cue: plan.beats[event.beatIndex].cue,
-                  ),
-                ),
+                onBeat: (event) => _handleBeat(plan, event),
                 onSkip: _skipEffect,
                 resultText: _controller.lastFormattedResult,
               ),
+            if (kDebugMode)
+              Positioned(
+                top: 54,
+                right: 8,
+                child: _DebugEffectDiagnosticsPanel(
+                  expanded: _debugExpanded,
+                  currentCue: _debugCurrentCue,
+                  resolving: _controller.isResolving,
+                  entries: _debugLog,
+                  onForcePremium: _debugForcePremium,
+                  onToggle: () {
+                    setState(() => _debugExpanded = !_debugExpanded);
+                  },
+                  onClear: _clearDebugLog,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+@immutable
+class _DebugEffectLogEntry {
+  const _DebugEffectLogEntry({
+    required this.elapsedMilliseconds,
+    required this.channel,
+    required this.message,
+  });
+
+  final int elapsedMilliseconds;
+  final String channel;
+  final String message;
+}
+
+class _DebugEffectDiagnosticsPanel extends StatelessWidget {
+  const _DebugEffectDiagnosticsPanel({
+    required this.expanded,
+    required this.currentCue,
+    required this.resolving,
+    required this.entries,
+    required this.onForcePremium,
+    required this.onToggle,
+    required this.onClear,
+  });
+
+  final bool expanded;
+  final String currentCue;
+  final bool resolving;
+  final List<_DebugEffectLogEntry> entries;
+  final VoidCallback onForcePremium;
+  final VoidCallback onToggle;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: const ValueKey('debug-effect-diagnostics'),
+      color: Colors.transparent,
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF00E5FF), width: 1.2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'DEBUG FX',
+                  style: TextStyle(
+                    color: Color(0xFF00E5FF),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'CUE: $currentCue',
+                    key: const ValueKey('debug-current-cue'),
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('debug-toggle-diagnostics'),
+                  onPressed: onToggle,
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 18,
+                  color: Colors.white70,
+                  icon: Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: const ValueKey('debug-force-premium'),
+                    onPressed: resolving ? null : onForcePremium,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFFFD400),
+                      side: const BorderSide(color: Color(0xFFFFD400)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    child: const Text(
+                      'FORCE PREMIUM',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                TextButton(
+                  key: const ValueKey('debug-clear-log'),
+                  onPressed: onClear,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('CLEAR', style: TextStyle(fontSize: 10)),
+                ),
+              ],
+            ),
+            if (expanded) ...[
+              const Divider(height: 10, color: Colors.white24),
+              SizedBox(
+                height: 128,
+                child: entries.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No events',
+                          style: TextStyle(color: Colors.white54, fontSize: 10),
+                        ),
+                      )
+                    : ListView.builder(
+                        key: const ValueKey('debug-diagnostic-log'),
+                        reverse: false,
+                        itemCount: entries.length,
+                        itemBuilder: (context, index) {
+                          final entry = entries[index];
+                          final elapsed = entry.elapsedMilliseconds
+                              .toString()
+                              .padLeft(5, '0');
+                          return Text(
+                            '+${elapsed}ms ${entry.channel.padRight(6)} '
+                            '${entry.message}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 9,
+                              height: 1.35,
+                              fontFamily: 'monospace',
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ],
         ),
       ),
