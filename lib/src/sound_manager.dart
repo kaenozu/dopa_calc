@@ -3,16 +3,40 @@ import 'package:flutter/foundation.dart';
 
 import 'effect_director.dart';
 
+@immutable
+class SoundProfile {
+  const SoundProfile({
+    required this.asset,
+    this.volume = 1.0,
+    this.playbackRate = 1.0,
+  });
+
+  final String asset;
+  final double volume;
+  final double playbackRate;
+}
+
 class SoundManager {
   final AudioPlayer _player;
 
   SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
   Future<void> playBeat(EffectRank rank, int beatIndex, EffectCue cue) async {
-    final asset = assetFor(rank, beatIndex, cue);
+    if (cue == EffectCue.blackout) {
+      await stop();
+      return;
+    }
+
+    final profile = profileFor(rank, beatIndex, cue);
     try {
       await _player.stop();
-      await _player.play(AssetSource('sounds/$asset'));
+      await _player.play(
+        AssetSource('sounds/${profile.asset}'),
+        volume: profile.volume,
+      );
+      // audioplayers は playbackRate を play/resume 後に設定する仕様。
+      // 毎回1.0も含めて設定し、前ビートのrateが残らないようにする。
+      await _player.setPlaybackRate(profile.playbackRate);
     } catch (error, stackTrace) {
       FlutterError.reportError(
         FlutterErrorDetails(
@@ -42,25 +66,69 @@ class SoundManager {
 
   Future<void> dispose() => _player.dispose();
 
-  /// 音声プラグインを初期化せずに検証できる純粋なCue→assetマッピング。
-  static String assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
+  /// 音声プラグインを初期化せずに検証できる純粋なCue→音響プロファイル。
+  static SoundProfile profileFor(
+    EffectRank rank,
+    int beatIndex,
+    EffectCue cue,
+  ) {
     switch (cue) {
       case EffectCue.preAlert:
-        return 'chance.wav';
+        // 高め・速めで先バレの鋭さを出す。
+        return const SoundProfile(
+          asset: 'chance.wav',
+          volume: 1.0,
+          playbackRate: 1.16,
+        );
       case EffectCue.symbolLock:
+        // 少し低く重くして図柄停止感を出す。
+        return const SoundProfile(
+          asset: 'impact.wav',
+          volume: 0.96,
+          playbackRate: 0.90,
+        );
       case EffectCue.pushPrompt:
+        // PUSH表示に合わせて通常impactよりわずかに鋭くする。
+        return const SoundProfile(
+          asset: 'impact.wav',
+          volume: 1.0,
+          playbackRate: 1.06,
+        );
       case EffectCue.shutter:
-        return 'impact.wav';
-      case EffectCue.revival:
-      case EffectCue.jackpot:
-        return 'premium.wav';
+        // 大きな役物が閉じる重量感を優先する。
+        return const SoundProfile(
+          asset: 'impact.wav',
+          volume: 1.0,
+          playbackRate: 0.72,
+        );
       case EffectCue.blackout:
-        // blackout は EffectPlayer 側で再生自体を抑止する。
-        return 'tick.wav';
+        // playBeatでも防御的にstopするため実際には再生しない。
+        return const SoundProfile(asset: 'tick.wav', volume: 0.0);
+      case EffectCue.revival:
+        // 暗転明けを重く立ち上げる。
+        return const SoundProfile(
+          asset: 'premium.wav',
+          volume: 1.0,
+          playbackRate: 0.88,
+        );
+      case EffectCue.jackpot:
+        // 復活との差を付け、確定時だけ少し速く華やかにする。
+        return const SoundProfile(
+          asset: 'premium.wav',
+          volume: 1.0,
+          playbackRate: 1.08,
+        );
       case EffectCue.standard:
-        break;
+        return SoundProfile(asset: _standardAssetFor(rank, beatIndex));
     }
+  }
 
+  /// 後方互換用。Cue→assetだけが必要なテスト/呼び出し向け。
+  static String assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
+    return profileFor(rank, beatIndex, cue).asset;
+  }
+
+  static String _standardAssetFor(EffectRank rank, int beatIndex) {
     switch (rank) {
       case EffectRank.normal:
         return 'tick.wav';
