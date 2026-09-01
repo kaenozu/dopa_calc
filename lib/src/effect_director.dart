@@ -73,6 +73,16 @@ extension RankThemeExtension on EffectRank {
   };
 }
 
+/// インテンシティからエフェクト強度ファクタを返す。
+double intensityFactor(EffectIntensity intensity) {
+  return switch (intensity) {
+    EffectIntensity.low => 0.45,
+    EffectIntensity.medium => 0.7,
+    EffectIntensity.high => 0.9,
+    EffectIntensity.extreme => 1.0,
+  };
+}
+
 /// ビートイベントの情報。
 class BeatEvent {
   const BeatEvent({
