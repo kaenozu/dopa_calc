@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'effect_director.dart';
 
-/// 先バレ・図柄ロック・役物落下を1つの非操作レイヤーとして描画する。
+/// 先バレ・図柄ロック・PUSH・役物落下を1つの非操作レイヤーとして描画する。
 class PachinkoMachineOverlay extends StatelessWidget {
   const PachinkoMachineOverlay({
     required this.cue,
@@ -25,7 +25,9 @@ class PachinkoMachineOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (cue == EffectCue.standard || cue == EffectCue.blackout) {
+    if (cue == EffectCue.standard ||
+        cue == EffectCue.shutter ||
+        cue == EffectCue.blackout) {
       return const SizedBox.shrink();
     }
 
@@ -42,6 +44,7 @@ class PachinkoMachineOverlay extends StatelessWidget {
             ),
             if (cue == EffectCue.preAlert ||
                 cue == EffectCue.symbolLock ||
+                cue == EffectCue.pushPrompt ||
                 cue == EffectCue.revival ||
                 cue == EffectCue.jackpot)
               _SymbolLockBackdrop(
@@ -169,10 +172,9 @@ class _SymbolLockBackdrop extends StatelessWidget {
 
   int get _lockedCount => switch (cue) {
     EffectCue.preAlert => 1,
-    EffectCue.symbolLock => 2,
-    EffectCue.revival => 2,
+    EffectCue.symbolLock || EffectCue.pushPrompt || EffectCue.revival => 2,
     EffectCue.jackpot => 3,
-    EffectCue.standard || EffectCue.blackout => 0,
+    EffectCue.standard || EffectCue.shutter || EffectCue.blackout => 0,
   };
 
   @override
