@@ -12,6 +12,17 @@ class GeneratedSoundBank {
   static const _sampleRate = 22050;
   static final Map<EffectCue, Uint8List> _cache = {};
 
+  static void prime() {
+    for (final cue in const [
+      EffectCue.preAlert,
+      EffectCue.shutter,
+      EffectCue.revival,
+      EffectCue.jackpot,
+    ]) {
+      bytesFor(cue);
+    }
+  }
+
   static Uint8List? bytesFor(EffectCue cue) {
     if (!_isGeneratedCue(cue)) return null;
     return _cache.putIfAbsent(cue, () => _generate(cue));
