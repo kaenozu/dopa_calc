@@ -36,12 +36,15 @@ class PachinkoMachineOverlay extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _SirenRails(
-              accent: accent,
-              phase: phase,
-              impact: impact,
-              reduceMotion: reduceMotion,
-            ),
+            _SirenRails(accent: accent, phase: phase, impact: impact, reduceMotion: reduceMotion),
+            if (cue == EffectCue.preAlert)
+              Align(
+                alignment: const Alignment(0, -0.72),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Image.asset('assets/images/hold_balls.png', width: 420, height: 140, fit: BoxFit.contain, errorBuilder: (c, e, s) => const SizedBox.shrink()),
+                ),
+              ),
             if (cue == EffectCue.preAlert ||
                 cue == EffectCue.symbolLock ||
                 cue == EffectCue.pushPrompt ||

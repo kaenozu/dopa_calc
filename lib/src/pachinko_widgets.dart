@@ -241,33 +241,21 @@ class ResultClimax extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.68),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: accent, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.55),
-                  blurRadius: 24,
-                ),
-              ],
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '★ $rankLabel ★',
-                maxLines: 1,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.2,
-                ),
-              ),
-            ),
-          ),
+          Builder(builder: (context) {
+            final lb = rankLabel.toUpperCase();
+            String? banner;
+            if (lb.contains('PREMIUM')) banner = 'assets/images/premium_banner.png';
+            else if (lb.contains('激')) banner = 'assets/images/gekiatsu_banner.png';
+            else if (lb.contains('CHANCE')) banner = 'assets/images/chance_banner.png';
+            if (banner != null) {
+              return Image.asset(banner, width: 360, height: 42, fit: BoxFit.contain, errorBuilder: (c,e,s)=> Container(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.68), borderRadius: BorderRadius.circular(999), border: Border.all(color: accent, width: 2)), child: FittedBox(fit: BoxFit.scaleDown, child: Text('★ $rankLabel ★', maxLines: 1, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2.2)))));
+            }
+            return Container(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.68), borderRadius: BorderRadius.circular(999), border: Border.all(color: accent, width: 2), boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.55), blurRadius: 24)]), child: FittedBox(fit: BoxFit.scaleDown, child: Text('★ $rankLabel ★', maxLines: 1, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2.2))));
+          }),
+          if (rankLabel.toUpperCase().contains('PREMIUM')) ...[
+            const SizedBox(height: 10),
+            Image.asset('assets/images/jackpot_777.png', width: 360, height: 120, fit: BoxFit.contain, errorBuilder: (c,e,s)=> const SizedBox.shrink()),
+          ],
           const SizedBox(height: 22),
           Transform.scale(
             scale: scale,
@@ -324,9 +312,7 @@ class ResultClimax extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
+          SizedBox(width: double.infinity, child: OutlinedButton.icon(
               onPressed: onSkip,
               icon: const Icon(Icons.fast_forward_rounded),
               label: const Text('演出SKIP'),

@@ -23,17 +23,33 @@ class CelebrationPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final impact = intensityFactor(intensity);
     final rankFactor = 0.45 + rank.index * 0.25;
-    final particleCount = (16 + 22 * rank.index + 16 * impact)
-        .round()
-        .clamp(16, 96)
-        .toInt();
-    final rayCount = (12 + 12 * rank.index).clamp(12, 48).toInt();
+    // PREMIUMは粒子をさらに盛る（安っぽさ対策）
+    final isPremium = rank == EffectRank.premium;
+    final particleBoost = isPremium ? 28 : 0;
+    final rayBoost = isPremium ? 16 : 0;
+    final particleCount = (16 + 22 * rank.index + 16 * impact + particleBoost).round().clamp(16, 128).toInt();
+    final rayCount = (12 + 12 * rank.index + rayBoost).clamp(12, 64).toInt();
     final center = size.center(Offset.zero);
-
-    _drawRings(canvas, center, size, impact);
+    _drawRings(canvas, center, size, impact * (isPremium ? 1.35 : 1.0));
     _drawRays(canvas, center, size, rayCount, impact);
     _drawParticles(canvas, size, particleCount, impact, rankFactor);
     _drawScanLines(canvas, size, impact);
+    if (isPremium) _drawPremiumStarburst(canvas, center, size, impact);
+  }
+
+  void _drawPremiumStarburst(Canvas canvas, Offset center, Size size, double impact) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..blendMode = BlendMode.plus;
+    for (var i = 0; i < 16; i++) {
+      final angle = i * math.pi * 2 / 16 + phase * 0.9;
+      final r = size.shortestSide * (0.18 + 0.42 * ((i % 2 == 0) ? 1 : 0.6));
+      paint
+        ..strokeWidth = 1.8 + impact * 2.2
+        ..color = Colors.white.withValues(alpha: 0.08 + 0.16 * impact);
+      canvas.drawLine(center, center + Offset(math.cos(angle) * r, math.sin(angle) * r), paint);
+    }
   }
 
   void _drawRings(Canvas canvas, Offset center, Size size, double impact) {
