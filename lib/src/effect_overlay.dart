@@ -133,9 +133,7 @@ class _EffectOverlayState extends State<EffectOverlay>
     final beat = plan.beats[_beatIndex];
     // displayRankが設定されていればそちらを使用、なければPlanのランク
     final effectiveRank = beat.displayRank ?? plan.rank;
-    final baseAccent = _baseAccent(effectiveRank);
-    final rankLabel = _rankLabel(effectiveRank);
-    final rankSubtitle = _rankSubtitle(effectiveRank);
+    final theme = effectiveRank.theme;
 
     // 結果表示フェーズ: 計算結果を画面中央にドラマチックに表示
     if (_showingResult && widget.resultText != null) {
@@ -151,8 +149,8 @@ class _EffectOverlayState extends State<EffectOverlay>
                 fontWeight: FontWeight.w900,
                 letterSpacing: 8,
                 shadows: [
-                  Shadow(color: baseAccent, blurRadius: 60),
-                  Shadow(color: baseAccent, blurRadius: 120),
+                  Shadow(color: theme.accent, blurRadius: 60),
+                  Shadow(color: theme.accent, blurRadius: 120),
                 ],
               ),
             ),
@@ -181,7 +179,11 @@ class _EffectOverlayState extends State<EffectOverlay>
               final motionDisabled = _reduceMotion || isDark;
               final phase = motionDisabled ? 0.0 : _motionController.value;
               final pulse = motionDisabled ? 1.0 : widget.pulse.value;
-              final accent = _animatedAccent(baseAccent, effectiveRank, phase);
+              final accent = _animatedAccent(
+                theme.accent,
+                effectiveRank,
+                phase,
+              );
               final impact = isDark ? 0.0 : _intensityFactor(beat.intensity);
               final flash = motionDisabled
                   ? 0.0
@@ -229,8 +231,8 @@ class _EffectOverlayState extends State<EffectOverlay>
                         // ランクバナー: darkビートでは非表示
                         if (!isDark)
                           _RankBanner(
-                            rankLabel: rankLabel,
-                            rankSubtitle: rankSubtitle,
+                            rankLabel: theme.label,
+                            rankSubtitle: theme.subtitle,
                             accent: accent,
                             phase: phase,
                             reduceMotion: motionDisabled,
@@ -308,33 +310,6 @@ class _EffectOverlayState extends State<EffectOverlay>
   }
 }
 
-Color _baseAccent(EffectRank rank) {
-  return switch (rank) {
-    EffectRank.normal => const Color(0xFFE8F1FF),
-    EffectRank.chance => const Color(0xFF4EDCFF),
-    EffectRank.gekiatsu => const Color(0xFFFF3B30),
-    EffectRank.premium => const Color(0xFFFFD700),
-  };
-}
-
-String _rankLabel(EffectRank rank) {
-  return switch (rank) {
-    EffectRank.normal => 'NORMAL',
-    EffectRank.chance => 'CHANCE ZONE',
-    EffectRank.gekiatsu => '激 熱 ZONE',
-    EffectRank.premium => 'PREMIUM RUSH',
-  };
-}
-
-String _rankSubtitle(EffectRank rank) {
-  return switch (rank) {
-    EffectRank.normal => 'CALCULATION EFFECT',
-    EffectRank.chance => 'EXPECTATION UP',
-    EffectRank.gekiatsu => 'HIGH IMPACT',
-    EffectRank.premium => 'MAXIMUM CELEBRATION',
-  };
-}
-
 double _intensityFactor(EffectIntensity intensity) {
   return switch (intensity) {
     EffectIntensity.low => 0.45,
@@ -358,12 +333,7 @@ class _EffectBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondary = switch (rank) {
-      EffectRank.normal => const Color(0xFF10233C),
-      EffectRank.chance => const Color(0xFF00324B),
-      EffectRank.gekiatsu => const Color(0xFF520000),
-      EffectRank.premium => const Color(0xFF4A2400),
-    };
+    final secondary = rank.theme.secondary;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -553,18 +523,9 @@ class _HeadlineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final targetSize = switch (rank) {
-      EffectRank.normal => 56.0,
-      EffectRank.chance => 82.0,
-      EffectRank.gekiatsu => 104.0,
-      EffectRank.premium => 126.0,
-    };
-    final letterSpacing = switch (rank) {
-      EffectRank.normal => 5.0,
-      EffectRank.chance => 7.0,
-      EffectRank.gekiatsu => 9.0,
-      EffectRank.premium => 10.0,
-    };
+    final theme = rank.theme;
+    final targetSize = theme.headlineSize;
+    final letterSpacing = theme.letterSpacing;
     final tilt = reduceMotion ? 0.0 : math.sin(phase * math.pi * 4) * 0.006;
 
     // darkビート: 枠線・発光なし、白文字のみ最小表示

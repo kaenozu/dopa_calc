@@ -1,8 +1,77 @@
 import 'dart:math';
+import 'dart:ui';
 
 enum EffectRank { normal, chance, gekiatsu, premium }
 
 enum EffectIntensity { low, medium, high, extreme }
+
+/// ランクごとの外観テーマ。
+class RankTheme {
+  const RankTheme({
+    required this.accent,
+    required this.secondary,
+    required this.label,
+    required this.subtitle,
+    required this.headlineSize,
+    required this.letterSpacing,
+  });
+
+  /// ランクのメインカラー。
+  final Color accent;
+
+  /// バックドロップグラデーションのセカンダリカラー。
+  final Color secondary;
+
+  /// ランクバナーの表示ラベル。
+  final String label;
+
+  /// ランクバナーのサブタイトル。
+  final String subtitle;
+
+  /// ヘッドラインカードのフォントサイズ。
+  final double headlineSize;
+
+  /// ヘッドラインカードの文字間隔。
+  final double letterSpacing;
+}
+
+/// EffectRank から外観テーマを取得する拡張。
+extension RankThemeExtension on EffectRank {
+  RankTheme get theme => switch (this) {
+    EffectRank.normal => const RankTheme(
+      accent: Color(0xFFE8F1FF),
+      secondary: Color(0xFF10233C),
+      label: 'NORMAL',
+      subtitle: 'CALCULATION EFFECT',
+      headlineSize: 56.0,
+      letterSpacing: 5.0,
+    ),
+    EffectRank.chance => const RankTheme(
+      accent: Color(0xFF4EDCFF),
+      secondary: Color(0xFF00324B),
+      label: 'CHANCE ZONE',
+      subtitle: 'EXPECTATION UP',
+      headlineSize: 82.0,
+      letterSpacing: 7.0,
+    ),
+    EffectRank.gekiatsu => const RankTheme(
+      accent: Color(0xFFFF3B30),
+      secondary: Color(0xFF520000),
+      label: '激 熱 ZONE',
+      subtitle: 'HIGH IMPACT',
+      headlineSize: 104.0,
+      letterSpacing: 9.0,
+    ),
+    EffectRank.premium => const RankTheme(
+      accent: Color(0xFFFFD700),
+      secondary: Color(0xFF4A2400),
+      label: 'PREMIUM RUSH',
+      subtitle: 'MAXIMUM CELEBRATION',
+      headlineSize: 126.0,
+      letterSpacing: 10.0,
+    ),
+  };
+}
 
 /// ビートイベントの情報。
 class BeatEvent {
