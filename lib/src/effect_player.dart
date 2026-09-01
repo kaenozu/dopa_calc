@@ -53,16 +53,15 @@ class EffectPlayer {
     SoundManager? soundManager,
     EffectHaptics? haptics,
     Future<void> Function(Duration duration)? delay,
-    EffectDiagnosticSink? diagnosticSink,
+    this.diagnosticSink,
   }) : _soundManager = soundManager ?? SoundManager(),
        _haptics = haptics ?? const SystemEffectHaptics(),
-       _delay = delay ?? Future<void>.delayed,
-       _diagnosticSink = diagnosticSink;
+       _delay = delay ?? Future<void>.delayed;
 
   final SoundManager _soundManager;
   final EffectHaptics _haptics;
   final Future<void> Function(Duration duration) _delay;
-  final EffectDiagnosticSink? _diagnosticSink;
+  final EffectDiagnosticSink? diagnosticSink;
 
   var _generation = 0;
   var _disposed = false;
@@ -216,7 +215,7 @@ class EffectPlayer {
     EffectCue? cue,
     int? beatIndex,
   }) {
-    _diagnosticSink?.call(
+    diagnosticSink?.call(
       EffectDiagnosticEvent(
         kind: kind,
         detail: detail,
