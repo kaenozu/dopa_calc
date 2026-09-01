@@ -136,6 +136,15 @@ class _EffectOverlayState extends State<EffectOverlay>
     };
   }
 
+  EffectCue _resultCue(EffectRank rank) {
+    return switch (rank) {
+      EffectRank.normal => EffectCue.standard,
+      EffectRank.chance => EffectCue.preAlert,
+      EffectRank.gekiatsu => EffectCue.revival,
+      EffectRank.premium => EffectCue.jackpot,
+    };
+  }
+
   Widget _buildResultClimax(EffectPlan plan) {
     final finalRank = plan.rankForBeat(plan.beats.length - 1);
     final theme = finalRank.theme;
@@ -182,9 +191,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                     ),
                   ),
                   PachinkoMachineOverlay(
-                    cue: finalRank == EffectRank.premium
-                        ? EffectCue.jackpot
-                        : EffectCue.symbolLock,
+                    cue: _resultCue(finalRank),
                     rank: finalRank,
                     accent: accent,
                     phase: phase,
