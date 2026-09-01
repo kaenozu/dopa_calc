@@ -475,7 +475,10 @@ class _DebugEffectDiagnosticsPanel extends StatelessWidget {
                     ),
                     child: const Text(
                       'FORCE PREMIUM',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
