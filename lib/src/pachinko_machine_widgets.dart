@@ -29,40 +29,42 @@ class PachinkoMachineOverlay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return IgnorePointer(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          _SirenRails(
-            accent: accent,
-            phase: phase,
-            impact: impact,
-            reduceMotion: reduceMotion,
-          ),
-          if (cue == EffectCue.preAlert ||
-              cue == EffectCue.symbolLock ||
-              cue == EffectCue.revival ||
-              cue == EffectCue.jackpot)
-            _SymbolLockBackdrop(
-              cue: cue,
+    return ExcludeSemantics(
+      child: IgnorePointer(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _SirenRails(
               accent: accent,
               phase: phase,
+              impact: impact,
               reduceMotion: reduceMotion,
             ),
-          if (cue == EffectCue.revival || cue == EffectCue.jackpot)
-            _MechanicalDropGate(
-              cue: cue,
-              accent: accent,
-              phase: phase,
-              reduceMotion: reduceMotion,
-            ),
-          if (cue == EffectCue.jackpot)
-            _JackpotStamp(
-              accent: accent,
-              phase: phase,
-              reduceMotion: reduceMotion,
-            ),
-        ],
+            if (cue == EffectCue.preAlert ||
+                cue == EffectCue.symbolLock ||
+                cue == EffectCue.revival ||
+                cue == EffectCue.jackpot)
+              _SymbolLockBackdrop(
+                cue: cue,
+                accent: accent,
+                phase: phase,
+                reduceMotion: reduceMotion,
+              ),
+            if (cue == EffectCue.revival || cue == EffectCue.jackpot)
+              _MechanicalDropGate(
+                cue: cue,
+                accent: accent,
+                phase: phase,
+                reduceMotion: reduceMotion,
+              ),
+            if (cue == EffectCue.jackpot)
+              _JackpotStamp(
+                accent: accent,
+                phase: phase,
+                reduceMotion: reduceMotion,
+              ),
+          ],
+        ),
       ),
     );
   }
