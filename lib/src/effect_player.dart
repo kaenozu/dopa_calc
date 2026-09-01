@@ -5,10 +5,17 @@ import 'sound_manager.dart';
 
 /// ビートイベントの情報。
 class BeatEvent {
-  const BeatEvent({required this.beatIndex, required this.intensity});
+  const BeatEvent({
+    required this.beatIndex,
+    required this.intensity,
+    this.silent = false,
+  });
 
   final int beatIndex;
   final EffectIntensity intensity;
+
+  /// trueのとき、音+ハプティクスを両方抑止する（暗転ビート用）。
+  final bool silent;
 }
 
 /// 効果音+ハプティクスを統一管理するプレイヤー。
@@ -21,6 +28,7 @@ class EffectPlayer {
 
   /// ビート発火時に音+ハプティクスを一括トリガーする。
   Future<void> playBeat(EffectRank rank, BeatEvent event) async {
+    if (event.silent) return;
     await _soundManager.playBeat(rank, event.beatIndex);
     await _impactFor(event.intensity);
   }

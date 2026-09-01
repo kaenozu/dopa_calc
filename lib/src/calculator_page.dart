@@ -24,7 +24,6 @@ class _CalculatorPageState extends State<CalculatorPage>
 
   late final AnimationController _pulseController;
   EffectPlan? _activePlan;
-  Timer? _resultTimer;
 
   static const _keys = <String>[
     'AC',
@@ -80,7 +79,6 @@ class _CalculatorPageState extends State<CalculatorPage>
   void dispose() {
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
-    _resultTimer?.cancel();
     _pulseController.dispose();
     unawaited(_effectPlayer.dispose());
     super.dispose();
@@ -139,7 +137,6 @@ class _CalculatorPageState extends State<CalculatorPage>
   }
 
   void _clear() {
-    _resultTimer?.cancel();
     _stopPulse();
     setState(() {
       _activePlan = null;
@@ -162,17 +159,7 @@ class _CalculatorPageState extends State<CalculatorPage>
         _activePlan = plan;
       });
       _startPulse();
-
-      _resultTimer?.cancel();
-      _resultTimer = Timer(plan.duration, () {
-        if (!mounted) return;
-        HapticFeedback.vibrate();
-        _stopPulse();
-        _controller.finishResult(formatted);
-        setState(() {
-          _activePlan = null;
-        });
-      });
+      // タイミングはOverlayが管理。完了時にonSkipが呼ばれる。
     } on CalculatorException catch (error) {
       HapticFeedback.heavyImpact();
       _controller.showError(error.message);
@@ -184,7 +171,6 @@ class _CalculatorPageState extends State<CalculatorPage>
 
   void _skipEffect() {
     if (!_controller.isResolving) return;
-    _resultTimer?.cancel();
     _stopPulse();
     _controller.finishResult(_controller.lastFormattedResult!);
     setState(() {

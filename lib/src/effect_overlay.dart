@@ -54,6 +54,7 @@ class _EffectOverlayState extends State<EffectOverlay>
       BeatEvent(
         beatIndex: _beatIndex,
         intensity: widget.plan.beats[_beatIndex].intensity,
+        silent: widget.plan.beats[_beatIndex].dark,
       ),
     );
     _scheduleNextBeat();
@@ -96,7 +97,7 @@ class _EffectOverlayState extends State<EffectOverlay>
     _beatTimer = Timer(beat.duration, () {
       if (!mounted) return;
 
-      // 最後のビートでresultTextがある場合、結果表示フェーズへ
+      // 最後のビート到達: 結果表示 or 即時完了
       if (_beatIndex >= widget.plan.beats.length - 1) {
         if (widget.resultText != null) {
           setState(() => _showingResult = true);
@@ -104,6 +105,9 @@ class _EffectOverlayState extends State<EffectOverlay>
           _resultTimer = Timer(const Duration(milliseconds: 1500), () {
             if (mounted) widget.onSkip();
           });
+        } else {
+          // resultTextなしなら即時完了
+          widget.onSkip();
         }
         return;
       }
@@ -114,6 +118,7 @@ class _EffectOverlayState extends State<EffectOverlay>
         BeatEvent(
           beatIndex: _beatIndex,
           intensity: widget.plan.beats[_beatIndex].intensity,
+          silent: widget.plan.beats[_beatIndex].dark,
         ),
       );
       if (!_reduceMotion) {
