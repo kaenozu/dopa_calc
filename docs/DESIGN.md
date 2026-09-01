@@ -10,7 +10,8 @@
 - `PachinkoMachineOverlay`: 先バレ、サイレンLED、7図柄ロック、復活役物、777 JACKPOT
 - `PachinkoCinematicOverlay`: PUSHカウントダウン、左右シャッター、復活白フラッシュなどビート進行率依存の演出
 - `EffectPlayer`: `EffectCue` ごとのSE・ハプティクスパターンとキャンセル制御
-- `SoundManager`: オリジナルSEの再生と純粋なCue→assetマッピング
+- `SoundManager`: Cue→音響プロファイル適用、AssetSource/BytesSource切替、SE停止
+- `GeneratedSoundBank`: 先バレ/シャッター/復活/JACKPOTの専用PCM WAVをDartで合成・キャッシュ
 
 ## 設計原則
 
@@ -25,13 +26,14 @@ PREMIUMのランク昇格では `EffectBeat.displayRank` を有効ランクと�
 ## 状態
 
 - `CalculationController.expression`: 現在の式
-- `CalculationController.display`: 現在の表示
+- `CalculationController.display`: 表示文字列
 - `CalculationController.isResolving`: 演出中
 - `CalculationController.showResult`: 結果表示状態
 - `CalculatorPage._activePlan`: 現在の演出
 - `EffectOverlay._beatIndex`: 現在のビート
 - `EffectOverlay._beatProgressController`: 現ビート内の0〜1進行率。PUSHの3→2→1、シャッター閉→開、復活フラッシュに利用
 - `EffectPlayer._generation`: 遅延ハプティクスの世代トークン。新ビート・SKIP・RESET・disposeで旧パターンを無効化
+- `GeneratedSoundBank._cache`: Cueごとの生成済みPCM WAV。SoundManager初期化時にプリウォーム
 
 ## 演出描画
 
@@ -52,20 +54,24 @@ PREMIUMのランク昇格では `EffectBeat.displayRank` を有効ランクと�
 
 `EffectPlayer` は有効ランクだけでなく `EffectCue` を受け取り、映像の演出意味とSE・振動を同期する。
 
-| Cue | SE | ハプティクス |
-|---|---|---|
-| `standard` | ランク/ビート従来マッピング | intensity準拠 |
-| `preAlert` | `chance.wav` | medium |
-| `symbolLock` | `impact.wav` | heavy |
-| `pushPrompt` | `impact.wav` | medium → 240ms → medium → 240ms → heavy |
-| `shutter` | `impact.wav` | heavy → 150ms → vibrate |
-| `blackout` | 再生中SEを停止 | なし |
-| `revival` | `premium.wav` | vibrate → 120ms → heavy |
-| `jackpot` | `premium.wav` | vibrate → 100ms → heavy → 100ms → vibrate |
+| Cue | SE | 音響プロファイル | ハプティクス |
+|---|---|---|---|
+| `standard` | 既存asset | 1.00x | intensity準拠 |
+| `preAlert` | 専用上昇チャープ | 1.16x / volume 1.00 | medium |
+| `symbolLock` | `impact.wav` | 0.90x / volume 0.96 | heavy |
+| `pushPrompt` | `impact.wav` | 1.06x / volume 1.00 | medium → 240ms → medium → 240ms → heavy |
+| `shutter` | 専用低音衝撃＋金属リング＋ノイズ | 0.72x / volume 1.00 | heavy → 150ms → vibrate |
+| `blackout` | 再生中SEを停止 | volume 0 | なし |
+| `revival` | 専用低音衝撃＋上昇スイープ | 0.88x / volume 1.00 | vibrate → 120ms → heavy |
+| `jackpot` | 専用4音アルペジオ＋高域スパークル | 1.08x / volume 1.00 | vibrate → 100ms → heavy → 100ms → vibrate |
 
-`SoundManager.assetFor()` はstaticな純粋関数とし、AudioPlayerを初期化せずCue→assetマッピングを単体テストできるようにする。
+`SoundManager.profileFor()` はAudioPlayerを初期化しない純粋関数とし、Cue→asset/volume/playbackRateを単体テストできるようにする。`assetFor()` は後方互換用の薄いラッパーとして残す。
+
+先バレ・シャッター・復活・JACKPOTは `GeneratedSoundBank` が22.05kHz / 16bit / mono PCM WAVとしてコード生成する。`audioplayers` の `BytesSource` へ渡すため、バイナリSEファイルの追加を必要としない。音声はCue単位でキャッシュし、`SoundManager` 初期化時に `prime()` して演出開始後の同期生成を避ける。
 
 PUSH/JACKPOT等の遅延ハプティクスは世代トークンで管理する。新しいビートが開始された時点で旧世代は無効になり、SKIP/RESETでは `EffectPlayer.cancelPending()` が世代を進めて再生中SEも停止する。したがって演出終了後に予約済み振動が漏れない。
+
+完全暗転は `EffectPlayer` のsilent判定に加えて `SoundManager.playBeat()` 側でも `EffectCue.blackout` をstop扱いにし、誤呼び出し時も音が出ない二重防御とする。
 
 ## 例外
 
@@ -78,4 +84,4 @@ PUSH/JACKPOT等の遅延ハプティクスは世代トークンで管理する�
 3. 計算履歴
 4. 広告削除買い切り
 5. 端末別の実測フレーム時間に基づく描画予算調整
-6. Cue専用SE素材の追加（先バレ音、シャッター金属音、確定ファンファーレ等）
+6. 実機評価に基づく専用SEの周波数・音量・尺チューニング
