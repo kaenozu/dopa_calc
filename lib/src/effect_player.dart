@@ -59,7 +59,7 @@ class EffectPlayer {
       return;
     }
 
-    await _soundManager.playBeat(rank, event.beatIndex, cue: cue);
+    await _soundManager.playBeat(rank, event.beatIndex, cue);
     if (!_isActive(token)) return;
 
     await _hapticForCue(cue, event.intensity, token);
@@ -134,7 +134,7 @@ class EffectPlayer {
     EffectRank rank,
     int beatIndex, {
     EffectCue cue = EffectCue.standard,
-  }) => _soundManager.assetFor(rank, beatIndex, cue: cue);
+  }) => _soundManager.assetFor(rank, beatIndex, cue);
 
   Future<void> dispose() async {
     if (_disposed) return;
