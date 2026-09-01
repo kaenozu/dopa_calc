@@ -30,51 +30,27 @@ void main() {
       addTearDown(manager.dispose);
 
       expect(
-        manager.assetFor(
-          EffectRank.normal,
-          99,
-          cue: EffectCue.preAlert,
-        ),
+        manager.assetFor(EffectRank.normal, 99, cue: EffectCue.preAlert),
         'chance.wav',
       );
       expect(
-        manager.assetFor(
-          EffectRank.premium,
-          0,
-          cue: EffectCue.symbolLock,
-        ),
+        manager.assetFor(EffectRank.premium, 0, cue: EffectCue.symbolLock),
         'impact.wav',
       );
       expect(
-        manager.assetFor(
-          EffectRank.chance,
-          0,
-          cue: EffectCue.pushPrompt,
-        ),
+        manager.assetFor(EffectRank.chance, 0, cue: EffectCue.pushPrompt),
         'impact.wav',
       );
       expect(
-        manager.assetFor(
-          EffectRank.normal,
-          0,
-          cue: EffectCue.shutter,
-        ),
+        manager.assetFor(EffectRank.normal, 0, cue: EffectCue.shutter),
         'impact.wav',
       );
       expect(
-        manager.assetFor(
-          EffectRank.normal,
-          0,
-          cue: EffectCue.revival,
-        ),
+        manager.assetFor(EffectRank.normal, 0, cue: EffectCue.revival),
         'premium.wav',
       );
       expect(
-        manager.assetFor(
-          EffectRank.normal,
-          0,
-          cue: EffectCue.jackpot,
-        ),
+        manager.assetFor(EffectRank.normal, 0, cue: EffectCue.jackpot),
         'premium.wav',
       );
     });
