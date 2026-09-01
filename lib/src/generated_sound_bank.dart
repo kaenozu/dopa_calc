@@ -57,7 +57,7 @@ class GeneratedSoundBank {
     final carrier = math.sin(phase);
     final harmonic = 0.34 * math.sin(phase * 2.02);
     final pulse = progress < 0.46 || progress > 0.58 ? 1.0 : 0.26;
-    return (carrier + harmonic) * 0.62 * envelope * pulse;
+    return (carrier + harmonic) * 0.47 * envelope * pulse;
   }
 
   static Uint8List _shutterWav() {
@@ -79,7 +79,7 @@ class GeneratedSoundBank {
               math.sin(2 * math.pi * 1170 * t) * 0.20) *
           ringDecay;
       final scrape = noise * impactDecay * 0.26;
-      return (thump + metal + scrape) * envelope;
+      return (thump + metal + scrape) * envelope * 0.88;
     }
 
     return _wav(0.38, sample);
@@ -117,7 +117,7 @@ class GeneratedSoundBank {
         math.exp(-math.max(0.0, t - 0.52) * 8.0) *
         (t > 0.52 ? 0.12 : 0.0);
     final master = _attackRelease(t, duration, attack: 0.005, release: 0.10);
-    return (sample + sparkle) * master;
+    return (sample + sparkle) * master * 1.45;
   }
 
   static double _attackRelease(
