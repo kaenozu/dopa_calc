@@ -18,7 +18,11 @@ class SoundManager {
       await _player.stop();
       await _player.play(AssetSource('sounds/$asset'));
     } catch (error, stackTrace) {
-      _reportPlaybackError(error, stackTrace, 'while playing an effect sound');
+      _reportPlaybackError(
+        error,
+        stackTrace,
+        'while playing an effect sound',
+      );
     }
   }
 
@@ -26,7 +30,11 @@ class SoundManager {
     try {
       await _player.stop();
     } catch (error, stackTrace) {
-      _reportPlaybackError(error, stackTrace, 'while stopping an effect sound');
+      _reportPlaybackError(
+        error,
+        stackTrace,
+        'while stopping an effect sound',
+      );
     }
   }
 
