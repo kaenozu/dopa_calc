@@ -176,9 +176,18 @@ void main() {
       final gekiatsu = EffectDirector(nextInt: (_) => 5).planFor('1');
       final chance = EffectDirector(nextInt: (_) => 25).planFor('1');
 
-      expect(gekiatsu.beats.any((beat) => beat.cue == EffectCue.pushPrompt), isTrue);
-      expect(chance.beats.any((beat) => beat.cue == EffectCue.pushPrompt), isFalse);
-      expect(gekiatsu.beats.any((beat) => beat.cue == EffectCue.shutter), isFalse);
+      expect(
+        gekiatsu.beats.any((beat) => beat.cue == EffectCue.pushPrompt),
+        isTrue,
+      );
+      expect(
+        chance.beats.any((beat) => beat.cue == EffectCue.pushPrompt),
+        isFalse,
+      );
+      expect(
+        gekiatsu.beats.any((beat) => beat.cue == EffectCue.shutter),
+        isFalse,
+      );
     });
   });
 }
