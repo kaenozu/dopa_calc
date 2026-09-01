@@ -1,6 +1,43 @@
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:dopa_calc/src/effect_director.dart';
 import 'package:dopa_calc/src/sound_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class _FakeAudioBackend implements EffectAudioBackend {
+  _FakeAudioBackend({this.firstStopBlocker});
+
+  final Completer<void>? firstStopBlocker;
+  final List<double> playVolumes = [];
+  final List<double> playbackRates = [];
+  var stopCalls = 0;
+  var disposeCalls = 0;
+
+  @override
+  Future<void> stop() {
+    stopCalls++;
+    if (stopCalls == 1 && firstStopBlocker != null) {
+      return firstStopBlocker!.future;
+    }
+    return Future<void>.value();
+  }
+
+  @override
+  Future<void> play(Source source, {required double volume}) async {
+    playVolumes.add(volume);
+  }
+
+  @override
+  Future<void> setPlaybackRate(double playbackRate) async {
+    playbackRates.add(playbackRate);
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCalls++;
+  }
+}
 
 void main() {
   group('SoundManager', () {
@@ -79,6 +116,81 @@ void main() {
       expect(jackpot.asset, 'premium.wav');
       expect(revival.playbackRate, lessThan(1.0));
       expect(jackpot.playbackRate, greaterThan(1.0));
+    });
+
+    test('stop待機中の旧playBeatは停止後に再生を再開しない', () async {
+      final firstStopBlocker = Completer<void>();
+      final backend = _FakeAudioBackend(firstStopBlocker: firstStopBlocker);
+      final manager = SoundManager(backend: backend);
+
+      final stalePlay = manager.playBeat(
+        EffectRank.gekiatsu,
+        2,
+        EffectCue.symbolLock,
+      );
+      expect(backend.stopCalls, 1);
+
+      await manager.stop();
+      expect(backend.stopCalls, 2);
+
+      firstStopBlocker.complete();
+      await stalePlay;
+
+      expect(backend.playVolumes, isEmpty);
+      expect(backend.playbackRates, isEmpty);
+      await manager.dispose();
+    });
+
+    test('新ビートがstop待機中の旧ビートを追い越しても旧音を再生しない', () async {
+      final firstStopBlocker = Completer<void>();
+      final backend = _FakeAudioBackend(firstStopBlocker: firstStopBlocker);
+      final manager = SoundManager(backend: backend);
+
+      final stalePlay = manager.playBeat(
+        EffectRank.gekiatsu,
+        2,
+        EffectCue.symbolLock,
+      );
+      expect(backend.stopCalls, 1);
+
+      await manager.playBeat(
+        EffectRank.gekiatsu,
+        3,
+        EffectCue.pushPrompt,
+      );
+      expect(backend.stopCalls, 2);
+      expect(backend.playVolumes, [1.0]);
+      expect(backend.playbackRates, [1.06]);
+
+      firstStopBlocker.complete();
+      await stalePlay;
+
+      expect(backend.playVolumes, [1.0]);
+      expect(backend.playbackRates, [1.06]);
+      await manager.dispose();
+    });
+
+    test('disposeは待機中の旧playBeatを無効化してbackendを破棄する', () async {
+      final firstStopBlocker = Completer<void>();
+      final backend = _FakeAudioBackend(firstStopBlocker: firstStopBlocker);
+      final manager = SoundManager(backend: backend);
+
+      final stalePlay = manager.playBeat(
+        EffectRank.premium,
+        7,
+        EffectCue.jackpot,
+      );
+      expect(backend.stopCalls, 1);
+
+      await manager.dispose();
+      expect(backend.stopCalls, 2);
+      expect(backend.disposeCalls, 1);
+
+      firstStopBlocker.complete();
+      await stalePlay;
+
+      expect(backend.playVolumes, isEmpty);
+      expect(backend.playbackRates, isEmpty);
     });
   });
 }
