@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'effect_director.dart';
-import 'effect_player.dart';
 
 class EffectOverlay extends StatefulWidget {
   const EffectOverlay({

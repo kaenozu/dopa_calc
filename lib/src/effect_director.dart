@@ -4,6 +4,21 @@ enum EffectRank { normal, chance, gekiatsu, premium }
 
 enum EffectIntensity { low, medium, high, extreme }
 
+/// ビートイベントの情報。
+class BeatEvent {
+  const BeatEvent({
+    required this.beatIndex,
+    required this.intensity,
+    this.silent = false,
+  });
+
+  final int beatIndex;
+  final EffectIntensity intensity;
+
+  /// trueのとき、音+ハプティクスを両方抑止する（暗転ビート用）。
+  final bool silent;
+}
+
 class EffectBeat {
   const EffectBeat({
     required this.headline,

@@ -3,21 +3,6 @@ import 'package:flutter/services.dart';
 import 'effect_director.dart';
 import 'sound_manager.dart';
 
-/// ビートイベントの情報。
-class BeatEvent {
-  const BeatEvent({
-    required this.beatIndex,
-    required this.intensity,
-    this.silent = false,
-  });
-
-  final int beatIndex;
-  final EffectIntensity intensity;
-
-  /// trueのとき、音+ハプティクスを両方抑止する（暗転ビート用）。
-  final bool silent;
-}
-
 /// 効果音+ハプティクスを統一管理するプレイヤー。
 /// EffectOverlayのビートイベントを1箇所で処理する。
 class EffectPlayer {
