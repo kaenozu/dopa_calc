@@ -17,7 +17,15 @@
 - 結果 `0` は「全消灯」演出
 - 演出SKIP（PUSH・シャッター・暗転・結果解放中も利用可能）
 - Reduce Motion (`disableAnimations`) 対応
-- バイブ・クリック音
+- `EffectCue` に同期したSE・ハプティクス
+  - 先バレ: `chance.wav` + 中振動
+  - 図柄ロック: `impact.wav` + 強振動
+  - PUSH: `impact.wav` + 中→中→強の3段振動
+  - シャッター: `impact.wav` + 強→長振動
+  - 完全暗転: 再生中SE停止 + 無振動
+  - 復活: `premium.wav` + 長→強振動
+  - JACKPOT: `premium.wav` + 長→強→長の3段振動
+- SKIP/RESET時は再生中SEと予約済み遅延ハプティクスをキャンセル
 - オリジナル生成SE（tick / chance / impact / premium）
 - 音声再生: `audioplayers ^6.8.1`
 
