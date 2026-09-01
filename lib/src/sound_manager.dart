@@ -9,7 +9,7 @@ class SoundManager {
   SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
   Future<void> playBeat(EffectRank rank, int beatIndex, EffectCue cue) async {
-    final asset = _assetFor(rank, beatIndex, cue);
+    final asset = assetFor(rank, beatIndex, cue);
     try {
       await _player.stop();
       await _player.play(AssetSource('sounds/$asset'));
@@ -42,11 +42,8 @@ class SoundManager {
 
   Future<void> dispose() => _player.dispose();
 
-  String assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
-    return _assetFor(rank, beatIndex, cue);
-  }
-
-  String _assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
+  /// 音声プラグインを初期化せずに検証できる純粋なCue→assetマッピング。
+  static String assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
     switch (cue) {
       case EffectCue.preAlert:
         return 'chance.wav';
