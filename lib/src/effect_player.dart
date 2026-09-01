@@ -129,12 +129,12 @@ class EffectPlayer {
     }
   }
 
-  /// SoundManagerのアセット名を取得（テスト用）。
-  String assetFor(
+  /// asset選択の確認はAudioPlayerを生成せず純粋関数で行う。
+  static String assetFor(
     EffectRank rank,
     int beatIndex, {
     EffectCue cue = EffectCue.standard,
-  }) => _soundManager.assetFor(rank, beatIndex, cue);
+  }) => SoundManager.assetFor(rank, beatIndex, cue);
 
   Future<void> dispose() async {
     if (_disposed) return;
