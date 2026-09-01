@@ -153,11 +153,7 @@ void main() {
       );
       expect(backend.stopCalls, 1);
 
-      await manager.playBeat(
-        EffectRank.gekiatsu,
-        3,
-        EffectCue.pushPrompt,
-      );
+      await manager.playBeat(EffectRank.gekiatsu, 3, EffectCue.pushPrompt);
       expect(backend.stopCalls, 2);
       expect(backend.playVolumes, [1.0]);
       expect(backend.playbackRates, [1.06]);
