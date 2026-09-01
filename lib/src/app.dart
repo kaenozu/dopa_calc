@@ -18,6 +18,9 @@ class DopaCalculatorApp extends StatelessWidget {
           seedColor: const Color(0xFFFFD400),
           brightness: Brightness.dark,
         ),
+        // Bundle NotoSansJP-VF ensures Japanese renders on Web CanvasKit/SkWasm without tofu
+        fontFamily: 'Noto Sans JP',
+        textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Noto Sans JP'),
       ),
       home: const CalculatorPage(),
     );
