@@ -61,15 +61,18 @@ void main() {
   group('EffectPlayer.playBeat', () {
     late _FakeSoundManager fakeSound;
     late _FakeHaptics fakeHaptics;
+    late List<EffectDiagnosticEvent> diagnostics;
     late EffectPlayer player;
 
     setUp(() {
       fakeSound = _FakeSoundManager();
       fakeHaptics = _FakeHaptics();
+      diagnostics = [];
       player = EffectPlayer(
         soundManager: fakeSound,
         haptics: fakeHaptics,
         delay: (_) async {},
+        diagnosticSink: diagnostics.add,
       );
     });
 
@@ -154,6 +157,44 @@ void main() {
       );
 
       expect(fakeHaptics.calls, ['vibrate', 'heavy', 'vibrate']);
+    });
+
+    test('診断イベントはSE発火後に実ハプティクス順を記録する', () async {
+      await player.playBeat(
+        EffectRank.gekiatsu,
+        const BeatEvent(beatIndex: 3, intensity: EffectIntensity.high),
+        cue: EffectCue.pushPrompt,
+      );
+
+      expect(
+        diagnostics.map((event) => (event.kind, event.detail)).toList(),
+        [
+          (EffectDiagnosticKind.sound, 'play'),
+          (EffectDiagnosticKind.haptic, 'medium'),
+          (EffectDiagnosticKind.haptic, 'medium'),
+          (EffectDiagnosticKind.haptic, 'heavy'),
+        ],
+      );
+      expect(diagnostics.every((event) => event.cue == EffectCue.pushPrompt), isTrue);
+      expect(diagnostics.every((event) => event.beatIndex == 3), isTrue);
+    });
+
+    test('暗転は再生ではなく停止診断イベントを記録する', () async {
+      await player.playBeat(
+        EffectRank.premium,
+        const BeatEvent(
+          beatIndex: 5,
+          intensity: EffectIntensity.low,
+          silent: true,
+        ),
+        cue: EffectCue.blackout,
+      );
+
+      expect(diagnostics, hasLength(1));
+      expect(diagnostics.single.kind, EffectDiagnosticKind.control);
+      expect(diagnostics.single.detail, 'audio-stop:silent');
+      expect(diagnostics.single.cue, EffectCue.blackout);
+      expect(diagnostics.single.beatIndex, 5);
     });
 
     test('cancelPendingで遅延PUSHを途中キャンセルする', () async {
