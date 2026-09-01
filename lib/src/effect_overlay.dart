@@ -7,6 +7,7 @@ import 'celebration_painter.dart';
 import 'effect_director.dart';
 import 'effect_widgets.dart';
 import 'pachinko_accent_painter.dart';
+import 'pachinko_cinematic_widgets.dart';
 import 'pachinko_machine_widgets.dart';
 import 'pachinko_widgets.dart';
 
@@ -42,6 +43,7 @@ class _EffectOverlayState extends State<EffectOverlay>
 
   late final AnimationController _motionController;
   late final AnimationController _flashController;
+  late final AnimationController _beatProgressController;
 
   @override
   void initState() {
@@ -54,6 +56,10 @@ class _EffectOverlayState extends State<EffectOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 420),
     );
+    _beatProgressController = AnimationController(
+      vsync: this,
+      duration: widget.plan.beats.first.duration,
+    )..forward();
     widget.onBeat(
       BeatEvent(
         beatIndex: _beatIndex,
@@ -82,8 +88,14 @@ class _EffectOverlayState extends State<EffectOverlay>
       _motionController.value = 0;
       _flashController.stop();
       _flashController.value = 1;
+      _beatProgressController.stop();
+      _beatProgressController.value = 1;
     } else {
       _motionController.repeat();
+      if (!_beatProgressController.isCompleted &&
+          !_beatProgressController.isAnimating) {
+        _beatProgressController.forward();
+      }
     }
   }
 
@@ -93,7 +105,17 @@ class _EffectOverlayState extends State<EffectOverlay>
     _resultTimer?.cancel();
     _motionController.dispose();
     _flashController.dispose();
+    _beatProgressController.dispose();
     super.dispose();
+  }
+
+  void _startProgress(Duration duration) {
+    _beatProgressController.duration = duration;
+    if (_reduceMotion) {
+      _beatProgressController.value = 1;
+    } else {
+      _beatProgressController.forward(from: 0);
+    }
   }
 
   void _scheduleNextBeat() {
@@ -104,6 +126,7 @@ class _EffectOverlayState extends State<EffectOverlay>
       if (_beatIndex >= widget.plan.beats.length - 1) {
         if (widget.resultText != null) {
           setState(() => _showingResult = true);
+          _startProgress(const Duration(milliseconds: 1500));
           _resultTimer = Timer(const Duration(milliseconds: 1500), () {
             if (mounted) widget.onSkip();
           });
@@ -114,11 +137,13 @@ class _EffectOverlayState extends State<EffectOverlay>
       }
 
       setState(() => _beatIndex++);
+      final nextBeat = widget.plan.beats[_beatIndex];
+      _startProgress(nextBeat.duration);
       widget.onBeat(
         BeatEvent(
           beatIndex: _beatIndex,
-          intensity: widget.plan.beats[_beatIndex].intensity,
-          silent: widget.plan.beats[_beatIndex].dark,
+          intensity: nextBeat.intensity,
+          silent: nextBeat.dark,
         ),
       );
       if (!_reduceMotion) {
@@ -149,6 +174,7 @@ class _EffectOverlayState extends State<EffectOverlay>
     final finalRank = plan.rankForBeat(plan.beats.length - 1);
     final theme = finalRank.theme;
     final intensity = _resultIntensity(finalRank);
+    final resultCue = _resultCue(finalRank);
 
     return Positioned.fill(
       child: Material(
@@ -157,10 +183,17 @@ class _EffectOverlayState extends State<EffectOverlay>
           liveRegion: true,
           label: '計算結果 ${widget.resultText}',
           child: AnimatedBuilder(
-            animation: Listenable.merge([widget.pulse, _motionController]),
+            animation: Listenable.merge([
+              widget.pulse,
+              _motionController,
+              _beatProgressController,
+            ]),
             builder: (context, child) {
               final motionDisabled = _reduceMotion;
               final phase = motionDisabled ? 0.0 : _motionController.value;
+              final progress = motionDisabled
+                  ? 1.0
+                  : _beatProgressController.value;
               final accent = _animatedAccent(theme.accent, finalRank, phase);
               final impact = intensityFactor(intensity);
 
@@ -191,11 +224,18 @@ class _EffectOverlayState extends State<EffectOverlay>
                     ),
                   ),
                   PachinkoMachineOverlay(
-                    cue: _resultCue(finalRank),
+                    cue: resultCue,
                     rank: finalRank,
                     accent: accent,
                     phase: phase,
                     impact: impact,
+                    reduceMotion: motionDisabled,
+                  ),
+                  PachinkoCinematicOverlay(
+                    cue: resultCue,
+                    accent: accent,
+                    phase: phase,
+                    progress: progress,
                     reduceMotion: motionDisabled,
                   ),
                   if (!motionDisabled)
@@ -248,10 +288,14 @@ class _EffectOverlayState extends State<EffectOverlay>
               widget.pulse,
               _motionController,
               _flashController,
+              _beatProgressController,
             ]),
             builder: (context, child) {
               final motionDisabled = _reduceMotion || isDark;
               final phase = motionDisabled ? 0.0 : _motionController.value;
+              final progress = motionDisabled
+                  ? 1.0
+                  : _beatProgressController.value;
               final pulse = motionDisabled ? 1.0 : widget.pulse.value;
               final accent = _animatedAccent(
                 theme.accent,
@@ -311,6 +355,14 @@ class _EffectOverlayState extends State<EffectOverlay>
                       accent: accent,
                       phase: phase,
                       impact: impact,
+                      reduceMotion: motionDisabled,
+                    ),
+                  if (!isDark)
+                    PachinkoCinematicOverlay(
+                      cue: beat.cue,
+                      accent: accent,
+                      phase: phase,
+                      progress: progress,
                       reduceMotion: motionDisabled,
                     ),
                   if (!motionDisabled)
