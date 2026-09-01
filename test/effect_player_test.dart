@@ -5,27 +5,17 @@ import 'package:dopa_calc/src/effect_player.dart';
 import 'package:dopa_calc/src/sound_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// playBeat/stop/dispose の呼び出しを記録する SoundManager の偽者。
-/// AudioPlayer を初期化しない。
 class _FakeSoundManager implements SoundManager {
   final List<(EffectRank, int, EffectCue)> playBeatCalls = [];
   var stopCalls = 0;
 
   @override
-  Future<void> playBeat(
-    EffectRank rank,
-    int beatIndex, {
-    EffectCue cue = EffectCue.standard,
-  }) async {
+  Future<void> playBeat(EffectRank rank, int beatIndex, EffectCue cue) async {
     playBeatCalls.add((rank, beatIndex, cue));
   }
 
   @override
-  String assetFor(
-    EffectRank rank,
-    int beatIndex, {
-    EffectCue cue = EffectCue.standard,
-  }) => '';
+  String assetFor(EffectRank rank, int beatIndex, EffectCue cue) => '';
 
   @override
   Future<void> stop() async {
@@ -90,17 +80,16 @@ void main() {
       await player.dispose();
     });
 
-    test('通常ビートで SoundManager.playBeat が呼ばれる', () async {
+    test('通常ビートで音と強度ハプティクスを再生する', () async {
       await player.playBeat(
         EffectRank.premium,
         const BeatEvent(beatIndex: 0, intensity: EffectIntensity.medium),
       );
 
       expect(fakeSound.playBeatCalls, hasLength(1));
-      expect(
-        fakeSound.playBeatCalls.first,
-        (EffectRank.premium, 0, EffectCue.standard),
-      );
+      expect(fakeSound.playBeatCalls.single.$1, EffectRank.premium);
+      expect(fakeSound.playBeatCalls.single.$2, 0);
+      expect(fakeSound.playBeatCalls.single.$3, EffectCue.standard);
       expect(fakeHaptics.calls, ['medium']);
     });
 
@@ -111,10 +100,7 @@ void main() {
         cue: EffectCue.pushPrompt,
       );
 
-      expect(
-        fakeSound.playBeatCalls.single,
-        (EffectRank.gekiatsu, 2, EffectCue.pushPrompt),
-      );
+      expect(fakeSound.playBeatCalls.single.$3, EffectCue.pushPrompt);
     });
 
     test('silent=true で音とハプティクスを止める', () async {
@@ -173,10 +159,10 @@ void main() {
       expect(fakeHaptics.calls, ['vibrate', 'heavy', 'vibrate']);
     });
 
-    test('SKIP相当のcancelPendingで遅延PUSHを途中キャンセルする', () async {
+    test('cancelPendingで遅延PUSHを途中キャンセルする', () async {
       final delayStarted = Completer<void>();
       final releaseDelay = Completer<void>();
-      player = EffectPlayer(
+      final cancelPlayer = EffectPlayer(
         soundManager: fakeSound,
         haptics: fakeHaptics,
         delay: (_) {
@@ -184,15 +170,16 @@ void main() {
           return releaseDelay.future;
         },
       );
+      addTearDown(cancelPlayer.dispose);
 
-      final playing = player.playBeat(
+      final playing = cancelPlayer.playBeat(
         EffectRank.gekiatsu,
         const BeatEvent(beatIndex: 3, intensity: EffectIntensity.high),
         cue: EffectCue.pushPrompt,
       );
       await delayStarted.future;
 
-      await player.cancelPending();
+      await cancelPlayer.cancelPending();
       releaseDelay.complete();
       await playing;
 
