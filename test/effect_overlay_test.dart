@@ -1,6 +1,7 @@
 import 'package:dopa_calc/src/effect_director.dart';
 import 'package:dopa_calc/src/effect_overlay.dart';
 import 'package:dopa_calc/src/effect_widgets.dart';
+import 'package:dopa_calc/src/pachinko_machine_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,6 +14,7 @@ EffectPlan _premiumPlan() {
         subline: '答えは最初から決まっている',
         duration: Duration(seconds: 5),
         intensity: EffectIntensity.extreme,
+        cue: EffectCue.jackpot,
       ),
     ],
   );
@@ -27,12 +29,14 @@ EffectPlan _planWithDarkBeat() {
         subline: '',
         duration: Duration(milliseconds: 500),
         intensity: EffectIntensity.medium,
+        cue: EffectCue.preAlert,
       ),
       EffectBeat(
         headline: '…………',
         subline: '',
         duration: Duration(milliseconds: 500),
         intensity: EffectIntensity.low,
+        cue: EffectCue.blackout,
         dark: true,
       ),
     ],
@@ -48,6 +52,7 @@ EffectPlan _shortPlan() {
         subline: '',
         duration: Duration(milliseconds: 100),
         intensity: EffectIntensity.extreme,
+        cue: EffectCue.jackpot,
       ),
     ],
   );
@@ -97,6 +102,9 @@ void main() {
     expect(find.textContaining('PREMIUM RUSH'), findsOneWidget);
     expect(find.text('ドパ計算RUSH'), findsWidgets);
     expect(find.text('DOPA HEAT'), findsOneWidget);
+    expect(find.byType(PachinkoMachineOverlay), findsOneWidget);
+    expect(find.text('777 JACKPOT'), findsOneWidget);
+    expect(find.text('JACKPOT'), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -107,6 +115,8 @@ void main() {
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
+    expect(find.byType(PachinkoMachineOverlay), findsOneWidget);
+    expect(find.text('777 JACKPOT'), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -127,6 +137,8 @@ void main() {
 
     expect(find.text('42'), findsOneWidget);
     expect(find.text('RESULT UNLOCKED'), findsOneWidget);
+    expect(find.text('777 JACKPOT'), findsOneWidget);
+    expect(find.text('JACKPOT'), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
     expect(skipCalled, isFalse);
 
@@ -148,7 +160,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 150));
 
-    expect(find.text('777'), findsOneWidget);
+    expect(find.text('777'), findsWidgets);
     expect(find.text('演出SKIP'), findsOneWidget);
     await tester.tap(find.text('演出SKIP'));
     await tester.pump();
@@ -204,7 +216,7 @@ void main() {
     expect(skipCalled, isTrue);
   });
 
-  testWidgets('darkビートでは背景エフェクトも消えて完全暗転になる', (tester) async {
+  testWidgets('darkビートでは背景エフェクトと役物が消えて完全暗転になる', (tester) async {
     await tester.pumpWidget(
       _testApp(plan: _planWithDarkBeat(), disableAnimations: true),
     );
@@ -212,11 +224,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 32));
     expect(find.text('テスト'), findsWidgets);
     expect(find.byType(EffectBackdrop), findsOneWidget);
+    expect(find.byType(PachinkoMachineOverlay), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('…………'), findsWidgets);
     expect(find.text('DOPA HEAT'), findsNothing);
     expect(find.byType(EffectBackdrop), findsNothing);
+    expect(find.byType(PachinkoMachineOverlay), findsNothing);
 
     expect(tester.takeException(), isNull);
   });
