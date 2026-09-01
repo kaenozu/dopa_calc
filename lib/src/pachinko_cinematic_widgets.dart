@@ -237,11 +237,13 @@ class _ShutterDoors extends StatelessWidget {
 
   double _closureFor(double value) {
     if (value < 0.62) {
-      return Curves.easeInCubic.transform((value / 0.62).clamp(0.0, 1.0));
+      return Curves.easeInCubic.transform(
+        (value / 0.62).clamp(0.0, 1.0).toDouble(),
+      );
     }
     return 1 -
         Curves.easeOutExpo.transform(
-          ((value - 0.62) / 0.38).clamp(0.0, 1.0),
+          ((value - 0.62) / 0.38).clamp(0.0, 1.0).toDouble(),
         );
   }
 }
@@ -318,7 +320,7 @@ class _RevivalBurst extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalized = (progress / 0.22).clamp(0.0, 1.0);
+    final normalized = (progress / 0.22).clamp(0.0, 1.0).toDouble();
     final flash = reduceMotion ? 0.12 : 1 - Curves.easeOut.transform(normalized);
     final ringScale = reduceMotion ? 1.0 : 0.45 + normalized * 1.7;
 
@@ -329,7 +331,7 @@ class _RevivalBurst extends StatelessWidget {
         if (flash > 0.001)
           ColoredBox(
             color: Colors.white.withValues(
-              alpha: (flash * 0.88).clamp(0.0, 0.88),
+              alpha: (flash * 0.88).clamp(0.0, 0.88).toDouble(),
             ),
           ),
         Center(
