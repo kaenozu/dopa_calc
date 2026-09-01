@@ -12,6 +12,7 @@ class EffectOverlay extends StatefulWidget {
     required this.pulse,
     required this.onBeat,
     required this.onSkip,
+    this.resultText,
     super.key,
   });
 
@@ -20,6 +21,9 @@ class EffectOverlay extends StatefulWidget {
   final ValueChanged<int> onBeat;
   final VoidCallback onSkip;
 
+  /// 最後のビート後に表示する計算結果。nullなら通常のビート表示を維持。
+  final String? resultText;
+
   @override
   State<EffectOverlay> createState() => _EffectOverlayState();
 }
@@ -27,8 +31,10 @@ class EffectOverlay extends StatefulWidget {
 class _EffectOverlayState extends State<EffectOverlay>
     with TickerProviderStateMixin {
   Timer? _beatTimer;
+  Timer? _resultTimer;
   var _beatIndex = 0;
   var _reduceMotion = false;
+  var _showingResult = false;
 
   late final AnimationController _motionController;
   late final AnimationController _flashController;
@@ -74,6 +80,7 @@ class _EffectOverlayState extends State<EffectOverlay>
   @override
   void dispose() {
     _beatTimer?.cancel();
+    _resultTimer?.cancel();
     _motionController.dispose();
     _flashController.dispose();
     super.dispose();
@@ -82,7 +89,19 @@ class _EffectOverlayState extends State<EffectOverlay>
   void _scheduleNextBeat() {
     final beat = widget.plan.beats[_beatIndex];
     _beatTimer = Timer(beat.duration, () {
-      if (!mounted || _beatIndex >= widget.plan.beats.length - 1) return;
+      if (!mounted) return;
+
+      // 最後のビートでresultTextがある場合、結果表示フェーズへ
+      if (_beatIndex >= widget.plan.beats.length - 1) {
+        if (widget.resultText != null) {
+          setState(() => _showingResult = true);
+          // 結果を1.5秒表示してからオーバーレイを閉じる
+          _resultTimer = Timer(const Duration(milliseconds: 1500), () {
+            if (mounted) widget.onSkip();
+          });
+        }
+        return;
+      }
 
       setState(() => _beatIndex++);
       widget.onBeat(_beatIndex);
@@ -107,9 +126,38 @@ class _EffectOverlayState extends State<EffectOverlay>
   Widget build(BuildContext context) {
     final plan = widget.plan;
     final beat = plan.beats[_beatIndex];
-    final baseAccent = _baseAccent(plan.rank);
-    final rankLabel = _rankLabel(plan.rank);
-    final rankSubtitle = _rankSubtitle(plan.rank);
+    // displayRankが設定されていればそちらを使用、なければPlanのランク
+    final effectiveRank = beat.displayRank ?? plan.rank;
+    final baseAccent = _baseAccent(effectiveRank);
+    final rankLabel = _rankLabel(effectiveRank);
+    final rankSubtitle = _rankSubtitle(effectiveRank);
+
+    // 結果表示フェーズ: 計算結果を画面中央にドラマチックに表示
+    if (_showingResult && widget.resultText != null) {
+      return Positioned.fill(
+        child: Material(
+          color: Colors.black,
+          child: Center(
+            child: Text(
+              widget.resultText!,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 120,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 8,
+                shadows: [
+                  Shadow(color: baseAccent, blurRadius: 60),
+                  Shadow(color: baseAccent, blurRadius: 120),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // darkビート: 全エフェクトをオフにし、静寂演出
+    final isDark = beat.dark;
 
     return Positioned.fill(
       child: Material(
@@ -126,52 +174,63 @@ class _EffectOverlayState extends State<EffectOverlay>
             builder: (context, child) {
               final phase = _reduceMotion ? 0.0 : _motionController.value;
               final pulse = _reduceMotion ? 1.0 : widget.pulse.value;
-              final accent = _animatedAccent(baseAccent, plan.rank, phase);
-              final impact = _intensityFactor(beat.intensity);
-              final flash = _reduceMotion
+              final accent = _animatedAccent(baseAccent, effectiveRank, phase);
+              // darkビートではimpactを強制0にし、全効果を抑制
+              final impact = isDark ? 0.0 : _intensityFactor(beat.intensity);
+              final flash = _reduceMotion || isDark
                   ? 0.0
                   : (1 - Curves.easeOut.transform(_flashController.value)) *
                         impact;
-              final shakeX = _reduceMotion
+              final shakeX = _reduceMotion || isDark
                   ? 0.0
                   : math.sin(phase * math.pi * 14) * 5.5 * impact;
-              final shakeY = _reduceMotion
+              final shakeY = _reduceMotion || isDark
                   ? 0.0
                   : math.cos(phase * math.pi * 18) * 3.5 * impact;
-              final rotation = _reduceMotion
+              final rotation = _reduceMotion || isDark
                   ? 0.0
                   : math.sin(phase * math.pi * 10) * 0.012 * impact;
 
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  _EffectBackdrop(rank: plan.rank, accent: accent),
-                  RepaintBoundary(
-                    child: CustomPaint(
-                      painter: _CelebrationPainter(
-                        rank: plan.rank,
-                        intensity: beat.intensity,
-                        beatIndex: _beatIndex,
-                        phase: phase,
-                        accent: accent,
+                  // darkビートでは非常に暗い背景のみ表示
+                  _EffectBackdrop(
+                    rank: effectiveRank,
+                    accent: isDark ? Colors.black : accent,
+                  ),
+                  // パーティクル・放射線はdarkで非表示
+                  if (!isDark)
+                    RepaintBoundary(
+                      child: CustomPaint(
+                        painter: _CelebrationPainter(
+                          rank: effectiveRank,
+                          intensity: beat.intensity,
+                          beatIndex: _beatIndex,
+                          phase: phase,
+                          accent: accent,
+                        ),
                       ),
                     ),
-                  ),
-                  if (!_reduceMotion)
+                  // 走査光・エッジフレームもdarkで非表示
+                  if (!_reduceMotion && !isDark)
                     _SweepBeam(accent: accent, phase: phase, impact: impact),
-                  _EdgeFrame(accent: accent, impact: impact),
+                  if (!isDark) _EdgeFrame(accent: accent, impact: impact),
                   SafeArea(
                     minimum: const EdgeInsets.fromLTRB(14, 12, 14, 18),
                     child: Column(
                       children: [
-                        _RankBanner(
-                          rankLabel: rankLabel,
-                          rankSubtitle: rankSubtitle,
-                          accent: accent,
-                          phase: phase,
-                          reduceMotion: _reduceMotion,
-                        ),
+                        // ランクバナー: darkビートでは非表示
+                        if (!isDark)
+                          _RankBanner(
+                            rankLabel: rankLabel,
+                            rankSubtitle: rankSubtitle,
+                            accent: accent,
+                            phase: phase,
+                            reduceMotion: _reduceMotion,
+                          ),
                         const Spacer(),
+                        // ヘッドラインカード: darkビートでは最小限の表示
                         Transform.rotate(
                           angle: rotation,
                           child: Transform.translate(
@@ -180,21 +239,24 @@ class _EffectOverlayState extends State<EffectOverlay>
                               scale: 1 + (pulse - 1) * 0.55,
                               child: _HeadlineCard(
                                 beat: beat,
-                                rank: plan.rank,
+                                rank: effectiveRank,
                                 accent: accent,
                                 phase: phase,
                                 reduceMotion: _reduceMotion,
+                                dark: isDark,
                               ),
                             ),
                           ),
                         ),
                         const Spacer(),
-                        _ProgressPips(
-                          current: _beatIndex,
-                          total: plan.beats.length,
-                          accent: accent,
-                          reduceMotion: _reduceMotion,
-                        ),
+                        // プログレス表示: darkビートでは非表示
+                        if (!isDark)
+                          _ProgressPips(
+                            current: _beatIndex,
+                            total: plan.beats.length,
+                            accent: accent,
+                            reduceMotion: _reduceMotion,
+                          ),
                         const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
@@ -473,6 +535,7 @@ class _HeadlineCard extends StatelessWidget {
     required this.accent,
     required this.phase,
     required this.reduceMotion,
+    this.dark = false,
   });
 
   final EffectBeat beat;
@@ -480,6 +543,7 @@ class _HeadlineCard extends StatelessWidget {
   final Color accent;
   final double phase;
   final bool reduceMotion;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
@@ -496,6 +560,37 @@ class _HeadlineCard extends StatelessWidget {
       EffectRank.premium => 10.0,
     };
     final tilt = reduceMotion ? 0.0 : math.sin(phase * math.pi * 4) * 0.006;
+
+    // darkビート: 枠線・発光なし、白文字のみ最小表示
+    if (dark) {
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 760),
+        padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  beat.headline,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white24,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Transform.rotate(
       angle: tilt,

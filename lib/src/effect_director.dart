@@ -10,12 +10,20 @@ class EffectBeat {
     required this.subline,
     required this.duration,
     this.intensity = EffectIntensity.low,
+    this.displayRank,
+    this.dark = false,
   });
 
   final String headline;
   final String subline;
   final Duration duration;
   final EffectIntensity intensity;
+
+  /// このビートで表示するランク。nullならPlanのrankを使用。
+  final EffectRank? displayRank;
+
+  /// trueのとき、全画面暗転＋最小限のエフェクト（ハズレ偽装用）。
+  final bool dark;
 }
 
 class EffectPlan {
@@ -43,29 +51,54 @@ class EffectDirector {
       return EffectPlan(
         rank: EffectRank.premium,
         beats: [
+          // 段階1: NORMALに見せる。違和感だけ。
           EffectBeat(
             headline: '・・・・・・',
             subline: '何かがおかしい',
-            duration: const Duration(milliseconds: 1000),
+            duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.low,
+            displayRank: EffectRank.normal,
           ),
+          // 段階2: CHANCEへ昇格
           EffectBeat(
             headline: '先 読 み 発 生',
             subline: '数字がざわついています',
             duration: const Duration(milliseconds: 1500),
             intensity: EffectIntensity.medium,
+            displayRank: EffectRank.chance,
           ),
+          // 段階3: 激熱へ昇格
           EffectBeat(
             headline: '超・確・定',
-            subline: '7系プレミアム',
+            subline: '7系プレミアム確認中',
             duration: const Duration(milliseconds: 1800),
             intensity: EffectIntensity.high,
+            displayRank: EffectRank.gekiatsu,
           ),
+          // ハズレ偽装: 一瞬暗転・無音
+          EffectBeat(
+            headline: '…………',
+            subline: '',
+            duration: const Duration(milliseconds: 800),
+            intensity: EffectIntensity.low,
+            displayRank: EffectRank.normal,
+            dark: true,
+          ),
+          // 復活
+          EffectBeat(
+            headline: '復 活',
+            subline: 'まだ終わってない',
+            duration: const Duration(milliseconds: 1200),
+            intensity: EffectIntensity.high,
+            displayRank: EffectRank.gekiatsu,
+          ),
+          // クライマックス: PREMIUM RUSH解禁
           EffectBeat(
             headline: 'ドパ計算RUSH',
             subline: '答えは最初から決まっている',
             duration: const Duration(milliseconds: 2500),
             intensity: EffectIntensity.extreme,
+            displayRank: EffectRank.premium,
           ),
         ],
       );
@@ -107,18 +140,36 @@ class EffectDirector {
             subline: 'ただの計算では終わらない',
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.medium,
+            displayRank: EffectRank.chance,
           ),
           EffectBeat(
-            headline: '1% 突 破',
-            subline: '確定音は脳内で鳴らしてください',
-            duration: const Duration(milliseconds: 1800),
+            headline: '激 熱',
+            subline: '期待度 92%（演出上）',
+            duration: const Duration(milliseconds: 1500),
             intensity: EffectIntensity.high,
+            displayRank: EffectRank.gekiatsu,
+          ),
+          EffectBeat(
+            headline: '…………',
+            subline: '',
+            duration: const Duration(milliseconds: 800),
+            intensity: EffectIntensity.low,
+            displayRank: EffectRank.normal,
+            dark: true,
+          ),
+          EffectBeat(
+            headline: '復 活',
+            subline: 'まだだ！！',
+            duration: const Duration(milliseconds: 1200),
+            intensity: EffectIntensity.high,
+            displayRank: EffectRank.gekiatsu,
           ),
           EffectBeat(
             headline: '超 計 算',
             subline: 'PREMIUM',
             duration: const Duration(milliseconds: 2600),
             intensity: EffectIntensity.extreme,
+            displayRank: EffectRank.premium,
           ),
         ],
       );

@@ -27,6 +27,7 @@ class _CalculatorPageState extends State<CalculatorPage>
   String _expression = '';
   String _display = '0';
   EffectPlan? _activePlan;
+  String? _lastFormattedResult;
   bool _showResult = false;
   bool _isResolving = false;
   Timer? _resultTimer;
@@ -255,6 +256,7 @@ class _CalculatorPageState extends State<CalculatorPage>
       HapticFeedback.heavyImpact();
       setState(() {
         _activePlan = plan;
+        _lastFormattedResult = formatted;
         _showResult = false;
         _isResolving = true;
       });
@@ -295,6 +297,7 @@ class _CalculatorPageState extends State<CalculatorPage>
       _showResult = true;
       _isResolving = false;
       _activePlan = null;
+      _lastFormattedResult = null;
     });
   }
 
@@ -304,6 +307,7 @@ class _CalculatorPageState extends State<CalculatorPage>
       _showResult = true;
       _activePlan = null;
       _isResolving = false;
+      _lastFormattedResult = null;
     });
   }
 
@@ -372,6 +376,7 @@ class _CalculatorPageState extends State<CalculatorPage>
                 onBeat: (beatIndex) =>
                     unawaited(_soundManager.playBeat(plan.rank, beatIndex)),
                 onSkip: _skipEffect,
+                resultText: _lastFormattedResult,
               ),
           ],
         ),
