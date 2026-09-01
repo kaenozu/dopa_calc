@@ -76,8 +76,7 @@ class PachinkoAccentPainter extends CustomPainter {
       final path = Path()..moveTo(baseX, -8);
       for (var segment = 0; segment < 8; segment++) {
         final y = size.height * (segment + 1) / 8;
-        final noiseSeed =
-            (bolt + 1) * 193 + segment * 31 + phaseStep * 17;
+        final noiseSeed = (bolt + 1) * 193 + segment * 31 + phaseStep * 17;
         final jitter = (_unitNoise(noiseSeed) - 0.5) * size.width * 0.18;
         final x = (baseX + jitter).clamp(0.0, size.width).toDouble();
         path.lineTo(x, y);
