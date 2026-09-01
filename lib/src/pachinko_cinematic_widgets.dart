@@ -83,9 +83,7 @@ class _PushPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final countdown = _countdownFor(progress);
-    final wave = reduceMotion
-        ? 0.6
-        : (math.sin(phase * math.pi * 8) + 1) / 2;
+    final wave = reduceMotion ? 0.6 : (math.sin(phase * math.pi * 8) + 1) / 2;
     final scale = reduceMotion ? 1.0 : 0.94 + wave * 0.1;
 
     return Stack(
