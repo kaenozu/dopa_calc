@@ -166,16 +166,16 @@ void main() {
         cue: EffectCue.pushPrompt,
       );
 
+      expect(diagnostics.map((event) => (event.kind, event.detail)).toList(), [
+        (EffectDiagnosticKind.sound, 'play'),
+        (EffectDiagnosticKind.haptic, 'medium'),
+        (EffectDiagnosticKind.haptic, 'medium'),
+        (EffectDiagnosticKind.haptic, 'heavy'),
+      ]);
       expect(
-        diagnostics.map((event) => (event.kind, event.detail)).toList(),
-        [
-          (EffectDiagnosticKind.sound, 'play'),
-          (EffectDiagnosticKind.haptic, 'medium'),
-          (EffectDiagnosticKind.haptic, 'medium'),
-          (EffectDiagnosticKind.haptic, 'heavy'),
-        ],
+        diagnostics.every((event) => event.cue == EffectCue.pushPrompt),
+        isTrue,
       );
-      expect(diagnostics.every((event) => event.cue == EffectCue.pushPrompt), isTrue);
       expect(diagnostics.every((event) => event.beatIndex == 3), isTrue);
     });
 
