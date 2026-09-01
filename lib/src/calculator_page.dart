@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'calculation_controller.dart';
 import 'calculator_engine.dart';
 import 'effect_director.dart';
 import 'effect_overlay.dart';
-import 'sound_manager.dart';
+import 'effect_player.dart';
 
 class CalculatorPage extends StatefulWidget {
   const CalculatorPage({super.key});
@@ -17,19 +18,12 @@ class CalculatorPage extends StatefulWidget {
 
 class _CalculatorPageState extends State<CalculatorPage>
     with SingleTickerProviderStateMixin {
-  static const _engine = CalculatorEngine();
-  static const _maxExpressionLength = 48;
-
+  final _controller = CalculationController();
   final _director = EffectDirector();
-  final _soundManager = SoundManager();
+  final _effectPlayer = EffectPlayer();
 
   late final AnimationController _pulseController;
-  String _expression = '';
-  String _display = '0';
   EffectPlan? _activePlan;
-  bool _showResult = false;
-  bool _isResolving = false;
-  Timer? _resultTimer;
 
   static const _keys = <String>[
     'AC',
@@ -57,6 +51,7 @@ class _CalculatorPageState extends State<CalculatorPage>
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onControllerChanged);
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 520),
@@ -74,7 +69,7 @@ class _CalculatorPageState extends State<CalculatorPage>
     if (disableAnimations && _pulseController.isAnimating) {
       _stopPulse();
     } else if (!disableAnimations &&
-        _isResolving &&
+        _controller.isResolving &&
         !_pulseController.isAnimating) {
       _startPulse();
     }
@@ -82,11 +77,18 @@ class _CalculatorPageState extends State<CalculatorPage>
 
   @override
   void dispose() {
-    _resultTimer?.cancel();
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
     _pulseController.dispose();
-    unawaited(_soundManager.dispose());
+    unawaited(_effectPlayer.dispose());
     super.dispose();
   }
+
+  void _onControllerChanged() {
+    setState(() {});
+  }
+
+  // ── パルスアニメーション ──────────────────────────────────
 
   void _startPulse() {
     final disableAnimations =
@@ -102,8 +104,10 @@ class _CalculatorPageState extends State<CalculatorPage>
     _pulseController.value = 1;
   }
 
+  // ── キー入力 ──────────────────────────────────────────────
+
   void _press(String key) {
-    if (_isResolving) return;
+    if (_controller.isResolving) return;
     HapticFeedback.selectionClick();
     SystemSound.play(SystemSoundType.click);
 
@@ -112,200 +116,71 @@ class _CalculatorPageState extends State<CalculatorPage>
         _clear();
         return;
       case '⌫':
-        _backspace();
+        _controller.backspace();
         return;
       case '=':
         _resolve();
         return;
       case '±':
-        _toggleSign();
+        _controller.toggleSign();
         return;
       case '+':
       case '−':
       case '×':
       case '÷':
-        _appendOperator(key);
+        _controller.appendOperator(key);
         return;
       default:
-        _appendNumber(key);
+        _controller.appendNumber(key);
         return;
     }
   }
 
   void _clear() {
-    _resultTimer?.cancel();
+    unawaited(_effectPlayer.cancelPending());
     _stopPulse();
     setState(() {
-      _expression = '';
-      _display = '0';
       _activePlan = null;
-      _showResult = false;
-      _isResolving = false;
     });
+    _controller.clear();
   }
 
-  void _backspace() {
-    if (_expression.isEmpty) return;
-    setState(() {
-      _expression = _expression.substring(0, _expression.length - 1);
-      _display = _expression.isEmpty ? '0' : _expression;
-      _showResult = false;
-    });
-  }
-
-  void _appendOperator(String operator) {
-    if (_showResult) {
-      final isErrorDisplay = _display != _expression;
-      setState(() {
-        if (isErrorDisplay) {
-          _expression = operator == '−' ? '−' : '';
-          _display = _expression.isEmpty ? '0' : _expression;
-        }
-        _showResult = false;
-      });
-      if (isErrorDisplay || _expression.isEmpty) return;
-    }
-
-    if (_expression.isEmpty) {
-      if (operator == '−') {
-        setState(() {
-          _expression = '−';
-          _display = _expression;
-        });
-      }
-      return;
-    }
-
-    final last = _expression[_expression.length - 1];
-    const operators = {'+', '−', '×', '÷'};
-    setState(() {
-      _showResult = false;
-      if (operators.contains(last)) {
-        _expression =
-            '${_expression.substring(0, _expression.length - 1)}$operator';
-      } else if (_expression.length < _maxExpressionLength) {
-        _expression += operator;
-      }
-      _display = _expression;
-    });
-  }
-
-  void _toggleSign() {
-    if (_expression.isEmpty) {
-      setState(() {
-        _expression = '−';
-        _display = _expression;
-        _showResult = false;
-      });
-      return;
-    }
-
-    const operators = {'+', '−', '×', '÷'};
-    var operandStart = 0;
-    for (var i = _expression.length - 1; i >= 0; i--) {
-      final char = _expression[i];
-      final isBinaryMinus =
-          char == '−' && i > 0 && !operators.contains(_expression[i - 1]);
-      final isBinaryOperator =
-          char == '+' || char == '×' || char == '÷' || isBinaryMinus;
-      if (isBinaryOperator) {
-        operandStart = i + 1;
-        break;
-      }
-    }
-
-    final operand = _expression.substring(operandStart);
-    if (operand.isEmpty) return;
-
-    setState(() {
-      if (operand.startsWith('−')) {
-        _expression =
-            '${_expression.substring(0, operandStart)}${operand.substring(1)}';
-      } else if (_expression.length < _maxExpressionLength) {
-        _expression = '${_expression.substring(0, operandStart)}−$operand';
-      }
-      _display = _expression;
-      _showResult = false;
-    });
-  }
-
-  void _appendNumber(String value) {
-    var nextExpression = _showResult ? '' : _expression;
-    final currentNumber = nextExpression.split(RegExp(r'[+−×÷]')).last;
-
-    if (value == '.' && currentNumber.contains('.')) return;
-    if (value == '.' && currentNumber.isEmpty) value = '0.';
-    if (nextExpression.length + value.length > _maxExpressionLength) return;
-
-    nextExpression += value;
-    setState(() {
-      _expression = nextExpression;
-      _display = nextExpression;
-      _showResult = false;
-    });
-  }
+  // ── 演出オーケストレーション ──────────────────────────────
 
   void _resolve() {
-    if (_expression.isEmpty || _isResolving) return;
+    if (_controller.isEmpty || _controller.isResolving) return;
 
     try {
-      final formatted = _evaluateCurrentExpression();
+      final formatted = _controller.evaluate();
       final plan = _director.planFor(formatted);
 
       HapticFeedback.heavyImpact();
+      _controller.beginResolving(formatted);
       setState(() {
         _activePlan = plan;
-        _showResult = false;
-        _isResolving = true;
       });
       _startPulse();
-
-      _resultTimer?.cancel();
-      _resultTimer = Timer(plan.duration, () {
-        if (!mounted) return;
-        HapticFeedback.vibrate();
-        _stopPulse();
-        _finishResult(formatted);
-      });
+      // タイミングはOverlayが管理。完了時にonSkipが呼ばれる。
     } on CalculatorException catch (error) {
       HapticFeedback.heavyImpact();
-      _showError(error.message);
+      _controller.showError(error.message);
+      setState(() {
+        _activePlan = null;
+      });
     }
   }
 
   void _skipEffect() {
-    if (!_isResolving) return;
-    _resultTimer?.cancel();
+    if (!_controller.isResolving) return;
+    unawaited(_effectPlayer.cancelPending());
     _stopPulse();
-    try {
-      _finishResult(_evaluateCurrentExpression());
-    } on CalculatorException catch (error) {
-      _showError(error.message);
-    }
-  }
-
-  String _evaluateCurrentExpression() {
-    return _engine.format(_engine.evaluate(_expression));
-  }
-
-  void _finishResult(String display) {
+    _controller.finishResult(_controller.lastFormattedResult!);
     setState(() {
-      _display = display;
-      _expression = display;
-      _showResult = true;
-      _isResolving = false;
       _activePlan = null;
     });
   }
 
-  void _showError(String message) {
-    setState(() {
-      _display = message;
-      _showResult = true;
-      _activePlan = null;
-      _isResolving = false;
-    });
-  }
+  // ── UI ────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -322,9 +197,9 @@ class _CalculatorPageState extends State<CalculatorPage>
                   Expanded(
                     flex: 3,
                     child: _Display(
-                      expression: _expression,
-                      display: _display,
-                      isResult: _showResult,
+                      expression: _controller.expression,
+                      display: _controller.display,
+                      isResult: _controller.showResult,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -369,9 +244,15 @@ class _CalculatorPageState extends State<CalculatorPage>
               EffectOverlay(
                 plan: plan,
                 pulse: _pulseController,
-                onBeat: (beatIndex) =>
-                    unawaited(_soundManager.playBeat(plan.rank, beatIndex)),
+                onBeat: (event) => unawaited(
+                  _effectPlayer.playBeat(
+                    plan.rankForBeat(event.beatIndex),
+                    event,
+                    cue: plan.beats[event.beatIndex].cue,
+                  ),
+                ),
                 onSkip: _skipEffect,
+                resultText: _controller.lastFormattedResult,
               ),
           ],
         ),

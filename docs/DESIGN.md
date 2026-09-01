@@ -3,32 +3,75 @@
 ## コンポーネント
 
 - `CalculatorEngine`: 式の字句解析、RPN変換、計算、表示整形
-- `EffectDirector`: 結果に応じた演出ランク・ビート・強度の決定
-- `CalculatorPage`: 入力状態、計算実行、演出開始・終了の制御
-- `EffectOverlay`: 演出UI、ビート進行、描画、ハプティクス、SKIP導線
-- `SoundManager`: オリジナルSEのアセット再生
+- `CalculationController`: 入力式・表示・結果確定状態を管理し、計算状態遷移をUIから分離
+- `EffectDirector`: 結果に応じた演出ランク・ビート・強度・`EffectCue` の決定
+- `CalculatorPage`: Controller / Director / Player / Overlay のオーケストレーション
+- `EffectOverlay`: 演出UI、ビート進行、ビート内進行率、SKIP導線、最終結果クライマックス
+- `PachinkoMachineOverlay`: 先バレ、サイレンLED、7図柄ロック、復活役物、777 JACKPOT
+- `PachinkoCinematicOverlay`: PUSHカウントダウン、左右シャッター、復活白フラッシュなどビート進行率依存の演出
+- `EffectPlayer`: `EffectCue` ごとのSE・ハプティクスパターンとキャンセル制御
+- `SoundManager`: Cue→音響プロファイル適用、AssetSource/BytesSource切替、SE停止
+- `GeneratedSoundBank`: 先バレ/シャッター/復活/JACKPOTの専用PCM WAVをDartで合成・キャッシュ
 
 ## 設計原則
 
 計算結果は先に確定し、その値を `EffectDirector` に渡す。演出抽選や描画が計算値を書き換える経路を持たせない。
 
-`CalculatorPage` は計算状態に集中し、演出描画は `effect_overlay.dart` に分離する。演出を追加・変更しても計算ロジックへ影響しない構造を維持する。
+入力・計算状態は `CalculationController`、演出の時間進行は `EffectOverlay` が所有する。Page側とOverlay側で同じタイマーを持たず、演出の完了通知はOverlayからPageへ一本化する。
+
+PREMIUMのランク昇格では `EffectBeat.displayRank` を有効ランクとして扱い、視覚テーマと効果音のランクを同じ `EffectPlan.rankForBeat()` から取得する。暗転ビートは `BeatEvent.silent` により音・ハプティクスも抑止する。
+
+`EffectCue` は `standard / preAlert / symbolLock / pushPrompt / shutter / blackout / revival / jackpot` を持つ。演出ロジック・描画・音・ハプティクスをCueで同期し、計算ロジックを変更せず予告や役物を追加できる構造を維持する。
 
 ## 状態
 
-- `_expression`: 現在の式
-- `_display`: 表示文字列
-- `_isResolving`: 演出中
-- `_showResult`: 結果表示状態
-- `_activePlan`: 現在の演出
+- `CalculationController.expression`: 現在の式
+- `CalculationController.display`: 表示文字列
+- `CalculationController.isResolving`: 演出中
+- `CalculationController.showResult`: 結果表示状態
+- `CalculatorPage._activePlan`: 現在の演出
+- `EffectOverlay._beatIndex`: 現在のビート
+- `EffectOverlay._beatProgressController`: 現ビート内の0〜1進行率。PUSHの3→2→1、シャッター閉→開、復活フラッシュに利用
+- `EffectPlayer._generation`: 遅延ハプティクスの世代トークン。新ビート・SKIP・RESET・disposeで旧パターンを無効化
+- `GeneratedSoundBank._cache`: Cueごとの生成済みPCM WAV。SoundManager初期化時にプリウォーム
 
 ## 演出描画
 
-- ランク帯、背景グラデーション、走査光、発光見出し、リング、粒子、放射線、フラッシュをレイヤー化する。
-- 描画量はランクごとに上限を持たせ、PREMIUMでも粒子96個・放射線48本を上限とする。
+- ランク帯、DOPA HEAT、盤面ランプ、背景グラデーション、走査光、発光見出し、リング、粒子、放射線、流星、稲妻、フラッシュをレイヤー化する。
+- 描画量はランクごとに上限を持たせ、PREMIUMでも粒子96個・放射線48本を上限とする。派手さは単純な描画数増加ではなく、演出レイヤーと時間構成で上げる。
+- 強制PREMIUMは **NORMAL → CHANCE → 激熱 → PUSH → シャッター → 暗転 → 復活 → PREMIUM** の8ビート、総尺9秒。ビート数を増やしても待ち時間を延ばさず、密度を上げる。
+- ランク差を保つため、CHANCEにはPUSHを出さず、激熱以上でPUSH、PREMIUMのみシャッターとJACKPOTへ到達する。
+- PUSHはビート進行率を使い3→2→1を表示する。実ボタン操作を要求せず、演出SKIPの操作性を阻害しない装飾レイヤーとする。
+- シャッターはビート前半で左右から閉鎖し、後半で再び開く。暗転直前の圧縮感を作る。
+- 復活/JACKPOT開始時は短い白フラッシュと拡大リングを重ね、暗転からの輝度差を強調する。
+- 最終結果は `ResultClimax` で解放表示し、長い指数表記でも `FittedBox` で画面内に収める。
 - 小画面では `FittedBox` で見出しを縮小し、固定フォントサイズによるオーバーフローを避ける。
-- `MediaQuery.disableAnimations` が有効なら常時アニメーション、フラッシュ、揺れを停止する。
-- 演出中もSKIPボタンを最前面に保持する。
+- `MediaQuery.disableAnimations` が有効なら常時アニメーション、カウントダウン進行、シャッター移動、フラッシュ、揺れを停止し、意味のある静的表示を残す。
+- `PachinkoMachineOverlay` / `PachinkoCinematicOverlay` は装飾用のため `ExcludeSemantics` と `IgnorePointer` でTalkBack・タップ操作を妨げない。
+- PUSH・シャッター・暗転を含む全演出フェーズと最終結果表示中もSKIP導線を最前面に保持する。
+
+## 音・ハプティクス
+
+`EffectPlayer` は有効ランクだけでなく `EffectCue` を受け取り、映像の演出意味とSE・振動を同期する。
+
+| Cue | SE | 音響プロファイル | ハプティクス |
+|---|---|---|---|
+| `standard` | 既存asset | 1.00x | intensity準拠 |
+| `preAlert` | 専用上昇チャープ | 1.16x / volume 1.00 | medium |
+| `symbolLock` | `impact.wav` | 0.90x / volume 0.96 | heavy |
+| `pushPrompt` | `impact.wav` | 1.06x / volume 1.00 | medium → 240ms → medium → 240ms → heavy |
+| `shutter` | 専用低音衝撃＋金属リング＋ノイズ | 0.72x / volume 1.00 | heavy → 150ms → vibrate |
+| `blackout` | 再生中SEを停止 | volume 0 | なし |
+| `revival` | 専用低音衝撃＋上昇スイープ | 0.88x / volume 1.00 | vibrate → 120ms → heavy |
+| `jackpot` | 専用4音アルペジオ＋高域スパークル | 1.08x / volume 1.00 | vibrate → 100ms → heavy → 100ms → vibrate |
+
+`SoundManager.profileFor()` はAudioPlayerを初期化しない純粋関数とし、Cue→asset/volume/playbackRateを単体テストできるようにする。`assetFor()` は後方互換用の薄いラッパーとして残す。
+
+先バレ・シャッター・復活・JACKPOTは `GeneratedSoundBank` が22.05kHz / 16bit / mono PCM WAVとしてコード生成する。`audioplayers` の `BytesSource` へ渡すため、バイナリSEファイルの追加を必要としない。音声はCue単位でキャッシュし、`SoundManager` 初期化時に `prime()` して演出開始後の同期生成を避ける。
+
+PUSH/JACKPOT等の遅延ハプティクスは世代トークンで管理する。新しいビートが開始された時点で旧世代は無効になり、SKIP/RESETでは `EffectPlayer.cancelPending()` が世代を進めて再生中SEも停止する。したがって演出終了後に予約済み振動が漏れない。
+
+完全暗転は `EffectPlayer` のsilent判定に加えて `SoundManager.playBeat()` 側でも `EffectCue.blackout` をstop扱いにし、誤呼び出し時も音が出ない二重防御とする。
 
 ## 例外
 
@@ -41,3 +84,4 @@
 3. 計算履歴
 4. 広告削除買い切り
 5. 端末別の実測フレーム時間に基づく描画予算調整
+6. 実機評価に基づく専用SEの周波数・音量・尺チューニング
