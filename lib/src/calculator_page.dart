@@ -279,11 +279,8 @@ class _CalculatorPageState extends State<CalculatorPage>
     if (!_isResolving) return;
     _resultTimer?.cancel();
     _stopPulse();
-    try {
-      _finishResult(_evaluateCurrentExpression());
-    } on CalculatorException catch (error) {
-      _showError(error.message);
-    }
+    // 式は_resolving中に変わらないため、キャッシュ済みの結果を使用
+    _finishResult(_lastFormattedResult!);
   }
 
   String _evaluateCurrentExpression() {
