@@ -29,14 +29,10 @@ class GeneratedSoundBank {
   }
 
   static bool _isGeneratedCue(EffectCue cue) {
-    return switch (cue) {
-      EffectCue.preAlert ||
-      EffectCue.shutter ||
-      EffectCue.revival ||
-      EffectCue.jackpot =>
-        true,
-      _ => false,
-    };
+    return cue == EffectCue.preAlert ||
+        cue == EffectCue.shutter ||
+        cue == EffectCue.revival ||
+        cue == EffectCue.jackpot;
   }
 
   static Uint8List _generate(EffectCue cue) {
@@ -51,7 +47,12 @@ class GeneratedSoundBank {
 
   static double _preAlertSample(double t, double duration) {
     final progress = t / duration;
-    final envelope = _attackRelease(t, duration, attack: 0.006, release: 0.035);
+    final envelope = _attackRelease(
+      t,
+      duration,
+      attack: 0.006,
+      release: 0.035,
+    );
     // 先バレらしい短い上昇チャープ。位相積分で周波数を滑らかに上げる。
     final phase = 2 * math.pi * (1450 * t + 2100 * t * t);
     final carrier = math.sin(phase);
@@ -62,6 +63,7 @@ class GeneratedSoundBank {
 
   static Uint8List _shutterWav() {
     var noiseState = 0x13579BDF;
+
     double sample(double t, double duration) {
       noiseState = (1664525 * noiseState + 1013904223) & 0x7fffffff;
       final noise = (noiseState / 0x3fffffff) - 1.0;
@@ -74,10 +76,9 @@ class GeneratedSoundBank {
       final impactDecay = math.exp(-t * 15.0);
       final ringDecay = math.exp(-t * 7.2);
       final thump = math.sin(2 * math.pi * 82 * t) * impactDecay * 0.60;
-      final metal =
-          (math.sin(2 * math.pi * 690 * t) * 0.30 +
-              math.sin(2 * math.pi * 1170 * t) * 0.20) *
-          ringDecay;
+      final ringLow = math.sin(2 * math.pi * 690 * t) * 0.30;
+      final ringHigh = math.sin(2 * math.pi * 1170 * t) * 0.20;
+      final metal = (ringLow + ringHigh) * ringDecay;
       final scrape = noise * impactDecay * 0.26;
       return (thump + metal + scrape) * envelope * 0.88;
     }
@@ -86,10 +87,18 @@ class GeneratedSoundBank {
   }
 
   static double _revivalSample(double t, double duration) {
-    final envelope = _attackRelease(t, duration, attack: 0.004, release: 0.08);
-    final impact = math.sin(2 * math.pi * 72 * t) * math.exp(-t * 10.0) * 0.55;
+    final envelope = _attackRelease(
+      t,
+      duration,
+      attack: 0.004,
+      release: 0.08,
+    );
+    final impactWave = math.sin(2 * math.pi * 72 * t);
+    final impactDecay = math.exp(-t * 10.0);
+    final impact = impactWave * impactDecay * 0.55;
     final sweepPhase = 2 * math.pi * (230 * t + 620 * t * t);
-    final rise = math.sin(sweepPhase) * (0.25 + 0.55 * (t / duration));
+    final riseGain = 0.25 + 0.55 * (t / duration);
+    final rise = math.sin(sweepPhase) * riseGain;
     final shimmer = math.sin(sweepPhase * 2.01) * 0.18;
     return (impact + rise + shimmer) * envelope * 0.72;
   }
@@ -103,20 +112,27 @@ class GeneratedSoundBank {
       final start = index * noteSpan;
       final local = t - start;
       if (local < 0 || local > 0.34) continue;
-      final noteEnvelope = math.min(local / 0.012, 1.0) * math.exp(-local * 5.0);
-      final frequency = notes[index];
-      final phase = 2 * math.pi * frequency * local;
-      sample +=
-          (math.sin(phase) + 0.30 * math.sin(phase * 2) + 0.12 * math.sin(phase * 3)) *
-          noteEnvelope *
-          0.30;
+
+      final noteAttack = math.min(local / 0.012, 1.0);
+      final noteDecay = math.exp(-local * 5.0);
+      final noteEnvelope = noteAttack * noteDecay;
+      final phase = 2 * math.pi * notes[index] * local;
+      final fundamental = math.sin(phase);
+      final second = 0.30 * math.sin(phase * 2);
+      final third = 0.12 * math.sin(phase * 3);
+      sample += (fundamental + second + third) * noteEnvelope * 0.30;
     }
 
-    final sparkle =
-        math.sin(2 * math.pi * 1760 * t) *
-        math.exp(-math.max(0.0, t - 0.52) * 8.0) *
-        (t > 0.52 ? 0.12 : 0.0);
-    final master = _attackRelease(t, duration, attack: 0.005, release: 0.10);
+    final sparkleWave = math.sin(2 * math.pi * 1760 * t);
+    final sparkleDecay = math.exp(-math.max(0.0, t - 0.52) * 8.0);
+    final sparkleGain = t > 0.52 ? 0.12 : 0.0;
+    final sparkle = sparkleWave * sparkleDecay * sparkleGain;
+    final master = _attackRelease(
+      t,
+      duration,
+      attack: 0.005,
+      release: 0.10,
+    );
     return (sample + sparkle) * master * 1.45;
   }
 
@@ -128,7 +144,9 @@ class GeneratedSoundBank {
   }) {
     final attackGain = attack <= 0 ? 1.0 : math.min(t / attack, 1.0);
     final remaining = duration - t;
-    final releaseGain = release <= 0 ? 1.0 : math.min(remaining / release, 1.0);
+    final releaseGain = release <= 0
+        ? 1.0
+        : math.min(remaining / release, 1.0);
     return math.max(0.0, math.min(attackGain, releaseGain));
   }
 
@@ -157,7 +175,8 @@ class GeneratedSoundBank {
     for (var i = 0; i < sampleCount; i++) {
       final t = i / _sampleRate;
       final sample = sampleAt(t, durationSeconds).clamp(-1.0, 1.0);
-      bytes.setInt16(44 + i * 2, (sample * 32767).round(), Endian.little);
+      final pcm = (sample * 32767).round();
+      bytes.setInt16(44 + i * 2, pcm, Endian.little);
     }
 
     return bytes.buffer.asUint8List();
