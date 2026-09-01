@@ -177,5 +177,28 @@ void main() {
       await _skipEffectIfPresent(tester);
       expect(_displayText(tester), '2');
     });
+
+    testWidgets('debug診断からPREMIUMを強制してCueログを確認できる', (tester) async {
+      await tester.pumpWidget(const DopaCalculatorApp());
+
+      expect(
+        find.byKey(const ValueKey('debug-effect-diagnostics')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('debug-force-premium')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('debug-force-premium')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('演出SKIP'), findsOneWidget);
+      expect(find.text('CUE: standard'), findsOneWidget);
+      expect(find.textContaining('FORCE PREMIUM result=777'), findsOneWidget);
+      expect(find.textContaining('1/8 standard normal'), findsOneWidget);
+      expect(find.textContaining('SE'), findsWidgets);
+
+      await _skipEffectIfPresent(tester);
+      expect(_displayText(tester), '777');
+    });
   });
 }
