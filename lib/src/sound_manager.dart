@@ -17,19 +17,59 @@ class SoundProfile {
   final double playbackRate;
 }
 
-class SoundManager {
+abstract interface class EffectAudioBackend {
+  Future<void> stop();
+
+  Future<void> play(Source source, {required double volume});
+
+  Future<void> setPlaybackRate(double playbackRate);
+
+  Future<void> dispose();
+}
+
+class _AudioplayersEffectAudioBackend implements EffectAudioBackend {
+  _AudioplayersEffectAudioBackend(this._player);
+
   final AudioPlayer _player;
 
-  SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer() {
+  @override
+  Future<void> stop() => _player.stop();
+
+  @override
+  Future<void> play(Source source, {required double volume}) {
+    return _player.play(source, volume: volume);
+  }
+
+  @override
+  Future<void> setPlaybackRate(double playbackRate) {
+    return _player.setPlaybackRate(playbackRate);
+  }
+
+  @override
+  Future<void> dispose() => _player.dispose();
+}
+
+class SoundManager {
+  final EffectAudioBackend _backend;
+  int _generation = 0;
+  bool _disposed = false;
+
+  SoundManager({AudioPlayer? player, EffectAudioBackend? backend})
+    : assert(player == null || backend == null),
+      _backend =
+          backend ?? _AudioplayersEffectAudioBackend(player ?? AudioPlayer()) {
     GeneratedSoundBank.prime();
   }
 
   Future<void> playBeat(EffectRank rank, int beatIndex, EffectCue cue) async {
+    if (_disposed) return;
+
     if (cue == EffectCue.blackout) {
       await stop();
       return;
     }
 
+    final generation = ++_generation;
     final profile = profileFor(rank, beatIndex, cue);
     final generatedBytes = GeneratedSoundBank.bytesFor(cue);
     final Source source = generatedBytes == null
@@ -37,39 +77,76 @@ class SoundManager {
         : BytesSource(generatedBytes, mimeType: 'audio/wav');
 
     try {
-      await _player.stop();
-      await _player.play(source, volume: profile.volume);
+      await _backend.stop();
+      if (!_isCurrent(generation)) return;
+
+      await _backend.play(source, volume: profile.volume);
+      if (!_isCurrent(generation)) return;
+
       // audioplayers は playbackRate を play/resume 後に設定する仕様。
       // 毎回1.0も含めて設定し、前ビートのrateが残らないようにする。
-      await _player.setPlaybackRate(profile.playbackRate);
+      await _backend.setPlaybackRate(profile.playbackRate);
     } catch (error, stackTrace) {
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'dopa_calc',
-          context: ErrorDescription('while playing an effect sound'),
-        ),
-      );
+      _report(error, stackTrace, context: 'while playing an effect sound');
     }
   }
 
   Future<void> stop() async {
+    if (_disposed) return;
+
+    // await中の旧playBeatを無効化してから実際の停止命令を送る。
+    _generation++;
     try {
-      await _player.stop();
+      await _backend.stop();
     } catch (error, stackTrace) {
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'dopa_calc',
-          context: ErrorDescription('while stopping an effect sound'),
-        ),
+      _report(error, stackTrace, context: 'while stopping an effect sound');
+    }
+  }
+
+  Future<void> dispose() async {
+    if (_disposed) return;
+
+    _disposed = true;
+    _generation++;
+    try {
+      await _backend.stop();
+    } catch (error, stackTrace) {
+      _report(
+        error,
+        stackTrace,
+        context: 'while stopping an effect sound during dispose',
+      );
+    }
+
+    try {
+      await _backend.dispose();
+    } catch (error, stackTrace) {
+      _report(
+        error,
+        stackTrace,
+        context: 'while disposing the effect audio backend',
       );
     }
   }
 
-  Future<void> dispose() => _player.dispose();
+  bool _isCurrent(int generation) {
+    return !_disposed && generation == _generation;
+  }
+
+  static void _report(
+    Object error,
+    StackTrace stackTrace, {
+    required String context,
+  }) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'dopa_calc',
+        context: ErrorDescription(context),
+      ),
+    );
+  }
 
   /// 音声プラグインを初期化せずに検証できる純粋なCue→音響プロファイル。
   static SoundProfile profileFor(
