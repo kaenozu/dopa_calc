@@ -49,10 +49,10 @@ void main() {
       expect(director.planFor('1').rank, EffectRank.normal);
     });
 
-    test('777 PREMIUMシーケンスは6ビート', () {
+    test('777 PREMIUMシーケンスは8ビート', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
-      expect(plan.beats.length, 6);
+      expect(plan.beats.length, 8);
     });
 
     test('PREMIUMシーケンスはdisplayRankが段階的に昇格する', () {
@@ -63,13 +63,15 @@ void main() {
         EffectRank.normal,
         EffectRank.chance,
         EffectRank.gekiatsu,
+        EffectRank.gekiatsu,
+        EffectRank.gekiatsu,
         EffectRank.normal,
         EffectRank.gekiatsu,
         EffectRank.premium,
       ]);
     });
 
-    test('PREMIUMシーケンスは遊技機キューが段階的に進行する', () {
+    test('PREMIUMシーケンスはPUSHとシャッターを経てJACKPOTへ進行する', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
       final cues = plan.beats.map((b) => b.cue).toList();
@@ -78,6 +80,8 @@ void main() {
         EffectCue.standard,
         EffectCue.preAlert,
         EffectCue.symbolLock,
+        EffectCue.pushPrompt,
+        EffectCue.shutter,
         EffectCue.blackout,
         EffectCue.revival,
         EffectCue.jackpot,
@@ -92,6 +96,8 @@ void main() {
       expect(ranks, [
         EffectRank.normal,
         EffectRank.chance,
+        EffectRank.gekiatsu,
+        EffectRank.gekiatsu,
         EffectRank.gekiatsu,
         EffectRank.normal,
         EffectRank.gekiatsu,
@@ -108,10 +114,11 @@ void main() {
       expect(plan.rankForBeat(1), EffectRank.chance);
     });
 
-    test('PREMIUMシーケンスの3番目がdarkビート', () {
+    test('PREMIUMシーケンスはシャッター後にdarkビートへ落とす', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
-      final darkBeat = plan.beats[3];
+      final darkBeat = plan.beats[5];
+      expect(plan.beats[4].cue, EffectCue.shutter);
       expect(darkBeat.dark, isTrue);
       expect(darkBeat.cue, EffectCue.blackout);
       expect(darkBeat.headline, '…………');
@@ -129,7 +136,7 @@ void main() {
       }
     });
 
-    test('PREMIUMシーケンスのintensityはlow→medium→high→low→high→extreme', () {
+    test('PREMIUMシーケンスのintensityはPUSHとシャッターで最大化する', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
       final intensities = plan.beats.map((b) => b.intensity).toList();
@@ -137,27 +144,41 @@ void main() {
         EffectIntensity.low,
         EffectIntensity.medium,
         EffectIntensity.high,
+        EffectIntensity.high,
+        EffectIntensity.extreme,
         EffectIntensity.low,
         EffectIntensity.high,
         EffectIntensity.extreme,
       ]);
     });
 
-    test('PREMIUMシーケンスの合計時間は正しい', () {
+    test('PREMIUMシーケンスは8ビート化しても合計9秒を維持する', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
       expect(plan.duration, const Duration(milliseconds: 9000));
     });
 
-    test('ランダム1%PREMIUMは5ビートとdarkを持つ', () {
+    test('ランダム1%PREMIUMもPUSH→シャッター→暗転→復活を持つ', () {
       final director = EffectDirector(nextInt: (_) => 0);
       final plan = director.planFor('1');
       expect(plan.rank, EffectRank.premium);
-      expect(plan.beats.length, 5);
-      expect(plan.beats[2].dark, isTrue);
-      expect(plan.beats[2].cue, EffectCue.blackout);
+      expect(plan.beats.length, 7);
+      expect(plan.beats[2].cue, EffectCue.pushPrompt);
+      expect(plan.beats[3].cue, EffectCue.shutter);
+      expect(plan.beats[4].dark, isTrue);
+      expect(plan.beats[4].cue, EffectCue.blackout);
+      expect(plan.beats[5].cue, EffectCue.revival);
       expect(plan.beats.last.displayRank, EffectRank.premium);
       expect(plan.beats.last.cue, EffectCue.jackpot);
+    });
+
+    test('激熱にはPUSHがありCHANCEにはPUSHがない', () {
+      final gekiatsu = EffectDirector(nextInt: (_) => 5).planFor('1');
+      final chance = EffectDirector(nextInt: (_) => 25).planFor('1');
+
+      expect(gekiatsu.beats.any((beat) => beat.cue == EffectCue.pushPrompt), isTrue);
+      expect(chance.beats.any((beat) => beat.cue == EffectCue.pushPrompt), isFalse);
+      expect(gekiatsu.beats.any((beat) => beat.cue == EffectCue.shutter), isFalse);
     });
   });
 }
