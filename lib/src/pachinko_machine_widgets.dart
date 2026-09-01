@@ -129,7 +129,8 @@ class _SirenRail extends StatelessWidget {
         final alpha = ((0.18 + wave * 0.7) * impact)
             .clamp(0.0, 0.92)
             .toDouble();
-        final lampColor = Color.lerp(accent, Colors.white, wave * 0.5) ?? accent;
+        final lampColor =
+            Color.lerp(accent, Colors.white, wave * 0.5) ?? accent;
 
         return Container(
           width: 9 + wave * 5,
