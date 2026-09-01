@@ -61,6 +61,24 @@ void main() {
       }
     });
 
+    test('専用SEは16bit上限へ張り付かずクリップを避ける', () {
+      for (final cue in const [
+        EffectCue.preAlert,
+        EffectCue.shutter,
+        EffectCue.revival,
+        EffectCue.jackpot,
+      ]) {
+        final bytes = GeneratedSoundBank.bytesFor(cue)!;
+        final data = ByteData.sublistView(bytes);
+        var peak = 0;
+        for (var offset = 44; offset + 1 < bytes.length; offset += 2) {
+          final magnitude = data.getInt16(offset, Endian.little).abs();
+          if (magnitude > peak) peak = magnitude;
+        }
+        expect(peak, lessThan(32767), reason: '$cue peak=$peak');
+      }
+    });
+
     test('Cueごとに長さが異なり音響役割を分離する', () {
       final preAlert = GeneratedSoundBank.bytesFor(EffectCue.preAlert)!;
       final shutter = GeneratedSoundBank.bytesFor(EffectCue.shutter)!;
