@@ -20,7 +20,9 @@ class SoundProfile {
 class SoundManager {
   final AudioPlayer _player;
 
-  SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer();
+  SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer() {
+    GeneratedSoundBank.prime();
+  }
 
   Future<void> playBeat(EffectRank rank, int beatIndex, EffectCue cue) async {
     if (cue == EffectCue.blackout) {
