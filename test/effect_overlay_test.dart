@@ -38,6 +38,20 @@ EffectPlan _planWithDarkBeat() {
   );
 }
 
+EffectPlan _shortPlan() {
+  return const EffectPlan(
+    rank: EffectRank.premium,
+    beats: [
+      EffectBeat(
+        headline: 'テスト',
+        subline: '',
+        duration: Duration(milliseconds: 100),
+        intensity: EffectIntensity.extreme,
+      ),
+    ],
+  );
+}
+
 Widget _testApp({
   required EffectPlan plan,
   required bool disableAnimations,
@@ -81,6 +95,7 @@ void main() {
 
     expect(find.textContaining('PREMIUM RUSH'), findsOneWidget);
     expect(find.text('ドパ計算RUSH'), findsWidgets);
+    expect(find.text('DOPA HEAT'), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -97,39 +112,68 @@ void main() {
 
   testWidgets('resultTextがある場合、最後のビート後に結果を1.5秒表示してonSkipが呼ばれる', (tester) async {
     var skipCalled = false;
-    final plan = EffectPlan(
-      rank: EffectRank.premium,
-      beats: [
-        const EffectBeat(
-          headline: 'テスト',
-          subline: '',
-          duration: Duration(milliseconds: 100),
-          intensity: EffectIntensity.low,
-        ),
-      ],
-    );
 
     await tester.pumpWidget(
       _testApp(
-        plan: plan,
+        plan: _shortPlan(),
         disableAnimations: true,
         resultText: '42',
         onSkip: () => skipCalled = true,
       ),
     );
 
-    // ビート100ms経過
     await tester.pump(const Duration(milliseconds: 150));
 
-    // 結果が表示される
     expect(find.text('42'), findsOneWidget);
+    expect(find.text('RESULT UNLOCKED'), findsOneWidget);
+    expect(find.text('演出SKIP'), findsOneWidget);
     expect(skipCalled, isFalse);
 
-    // 1.5秒待つ
     await tester.pump(const Duration(milliseconds: 1500));
 
-    // onSkipが呼ばれる
     expect(skipCalled, isTrue);
+  });
+
+  testWidgets('結果クライマックス中もSKIPできる', (tester) async {
+    var skipCalls = 0;
+
+    await tester.pumpWidget(
+      _testApp(
+        plan: _shortPlan(),
+        disableAnimations: true,
+        resultText: '777',
+        onSkip: () => skipCalls++,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+
+    expect(find.text('777'), findsOneWidget);
+    expect(find.text('演出SKIP'), findsOneWidget);
+    await tester.tap(find.text('演出SKIP'));
+    await tester.pump();
+
+    expect(skipCalls, 1);
+  });
+
+  testWidgets('長い指数表記の結果も360x640でoverflowしない', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(
+        plan: _shortPlan(),
+        disableAnimations: true,
+        resultText: '1.2345678901e+308',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(find.text('1.2345678901e+308'), findsOneWidget);
+    expect(find.text('演出SKIP'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('resultTextがnullの場合、最後のビート後に即時onSkipが呼ばれる', (tester) async {
@@ -154,10 +198,8 @@ void main() {
       ),
     );
 
-    // ビート100ms経過
     await tester.pump(const Duration(milliseconds: 150));
 
-    // 即時onSkip
     expect(skipCalled, isTrue);
   });
 
@@ -166,13 +208,12 @@ void main() {
       _testApp(plan: _planWithDarkBeat(), disableAnimations: true),
     );
 
-    // 1ビート目（darkではない）
     await tester.pump(const Duration(milliseconds: 32));
     expect(find.text('テスト'), findsWidgets);
 
-    // 2ビート目（dark）
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('…………'), findsWidgets);
+    expect(find.text('DOPA HEAT'), findsNothing);
 
     expect(tester.takeException(), isNull);
   });

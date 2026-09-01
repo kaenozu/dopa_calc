@@ -128,6 +128,9 @@ class EffectPlan {
 
   Duration get duration =>
       beats.fold(Duration.zero, (total, beat) => total + beat.duration);
+
+  /// 視覚・音の両方で使う、そのビート時点の有効ランク。
+  EffectRank rankForBeat(int index) => beats[index].displayRank ?? rank;
 }
 
 class EffectDirector {

@@ -60,13 +60,37 @@ void main() {
       final plan = director.planFor('777');
       final displayRanks = plan.beats.map((b) => b.displayRank).toList();
       expect(displayRanks, [
-        EffectRank.normal, // 違和感
-        EffectRank.chance, // 先読み発生
-        EffectRank.gekiatsu, // 超・確定
-        EffectRank.normal, // 暗転（ハズレ偽装）
-        EffectRank.gekiatsu, // 復活
-        EffectRank.premium, // RUSH突入
+        EffectRank.normal,
+        EffectRank.chance,
+        EffectRank.gekiatsu,
+        EffectRank.normal,
+        EffectRank.gekiatsu,
+        EffectRank.premium,
       ]);
+    });
+
+    test('有効ランクは視覚・音で同じ昇格順を返す', () {
+      final director = EffectDirector(nextInt: (_) => 55);
+      final plan = director.planFor('777');
+      final ranks = List.generate(plan.beats.length, plan.rankForBeat);
+
+      expect(ranks, [
+        EffectRank.normal,
+        EffectRank.chance,
+        EffectRank.gekiatsu,
+        EffectRank.normal,
+        EffectRank.gekiatsu,
+        EffectRank.premium,
+      ]);
+    });
+
+    test('displayRank未指定ならPlanランクを返す', () {
+      final director = EffectDirector(nextInt: (_) => 25);
+      final plan = director.planFor('1');
+
+      expect(plan.rank, EffectRank.chance);
+      expect(plan.rankForBeat(0), EffectRank.chance);
+      expect(plan.rankForBeat(1), EffectRank.chance);
     });
 
     test('PREMIUMシーケンスの3番目がdarkビート', () {
@@ -83,7 +107,6 @@ void main() {
       final plan = director.planFor('777');
       for (final beat in plan.beats) {
         expect(beat.headline.isNotEmpty, isTrue);
-        // darkビートのsublineは空
         if (!beat.dark) {
           expect(beat.subline.isNotEmpty, isTrue);
         }
@@ -98,7 +121,7 @@ void main() {
         EffectIntensity.low,
         EffectIntensity.medium,
         EffectIntensity.high,
-        EffectIntensity.low, // dark
+        EffectIntensity.low,
         EffectIntensity.high,
         EffectIntensity.extreme,
       ]);
@@ -107,7 +130,6 @@ void main() {
     test('PREMIUMシーケンスの合計時間は正しい', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
-      // 1200 + 1500 + 1800 + 800 + 1200 + 2500 = 9000ms
       expect(plan.duration, const Duration(milliseconds: 9000));
     });
 

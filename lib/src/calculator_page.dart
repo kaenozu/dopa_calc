@@ -242,8 +242,12 @@ class _CalculatorPageState extends State<CalculatorPage>
               EffectOverlay(
                 plan: plan,
                 pulse: _pulseController,
-                onBeat: (event) =>
-                    unawaited(_effectPlayer.playBeat(plan.rank, event)),
+                onBeat: (event) => unawaited(
+                  _effectPlayer.playBeat(
+                    plan.rankForBeat(event.beatIndex),
+                    event,
+                  ),
+                ),
                 onSkip: _skipEffect,
                 resultText: _controller.lastFormattedResult,
               ),

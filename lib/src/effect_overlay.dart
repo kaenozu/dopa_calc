@@ -102,19 +102,18 @@ class _EffectOverlayState extends State<EffectOverlay>
       if (_beatIndex >= widget.plan.beats.length - 1) {
         if (widget.resultText != null) {
           setState(() => _showingResult = true);
-          // 結果を1.5秒表示してからオーバーレイを閉じる
+          // 結果を1.5秒表示してからオーバーレイを閉じる。
+          // このフェーズでもSKIP導線は維持する。
           _resultTimer = Timer(const Duration(milliseconds: 1500), () {
             if (mounted) widget.onSkip();
           });
         } else {
-          // resultTextなしなら即時完了
           widget.onSkip();
         }
         return;
       }
 
       setState(() => _beatIndex++);
-      // BeatEventでビート情報を渡す（音+ハプティクスはEffectPlayerが処理）
       widget.onBeat(
         BeatEvent(
           beatIndex: _beatIndex,
@@ -129,39 +128,85 @@ class _EffectOverlayState extends State<EffectOverlay>
     });
   }
 
+  EffectIntensity _resultIntensity(EffectRank rank) {
+    return switch (rank) {
+      EffectRank.normal => EffectIntensity.medium,
+      EffectRank.chance => EffectIntensity.high,
+      EffectRank.gekiatsu || EffectRank.premium => EffectIntensity.extreme,
+    };
+  }
+
+  Widget _buildResultClimax(EffectPlan plan) {
+    final finalRank = plan.rankForBeat(plan.beats.length - 1);
+    final theme = finalRank.theme;
+    final intensity = _resultIntensity(finalRank);
+
+    return Positioned.fill(
+      child: Material(
+        color: Colors.black,
+        child: Semantics(
+          liveRegion: true,
+          label: '計算結果 ${widget.resultText}',
+          child: AnimatedBuilder(
+            animation: Listenable.merge([widget.pulse, _motionController]),
+            builder: (context, child) {
+              final motionDisabled = _reduceMotion;
+              final phase = motionDisabled ? 0.0 : _motionController.value;
+              final accent = _animatedAccent(theme.accent, finalRank, phase);
+              final impact = intensityFactor(intensity);
+
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  EffectBackdrop(rank: finalRank, accent: accent),
+                  RepaintBoundary(
+                    child: CustomPaint(
+                      painter: CelebrationPainter(
+                        rank: finalRank,
+                        intensity: intensity,
+                        beatIndex: plan.beats.length,
+                        phase: phase,
+                        accent: accent,
+                      ),
+                    ),
+                  ),
+                  if (!motionDisabled)
+                    SweepBeam(accent: accent, phase: phase, impact: impact),
+                  EdgeFrame(accent: accent, impact: impact),
+                  CabinetLamps(
+                    accent: accent,
+                    phase: phase,
+                    impact: impact,
+                    reduceMotion: motionDisabled,
+                  ),
+                  ResultClimax(
+                    resultText: widget.resultText!,
+                    rankLabel: theme.label,
+                    accent: accent,
+                    phase: phase,
+                    reduceMotion: motionDisabled,
+                    onSkip: widget.onSkip,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
     final beat = plan.beats[_beatIndex];
-    // displayRankが設定されていればそちらを使用、なければPlanのランク
-    final effectiveRank = beat.displayRank ?? plan.rank;
+    final effectiveRank = plan.rankForBeat(_beatIndex);
     final theme = effectiveRank.theme;
 
-    // 結果表示フェーズ: 計算結果を画面中央にドラマチックに表示
     if (_showingResult && widget.resultText != null) {
-      return Positioned.fill(
-        child: Material(
-          color: Colors.black,
-          child: Center(
-            child: Text(
-              widget.resultText!,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 120,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 8,
-                shadows: [
-                  Shadow(color: theme.accent, blurRadius: 60),
-                  Shadow(color: theme.accent, blurRadius: 120),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+      return _buildResultClimax(plan);
     }
 
-    // darkビート: 全エフェクトをオフにし、静寂演出
     final isDark = beat.dark;
 
     return Positioned.fill(
@@ -177,7 +222,6 @@ class _EffectOverlayState extends State<EffectOverlay>
               _flashController,
             ]),
             builder: (context, child) {
-              // Reduce Motion設定 または darkビート で全モーション無効
               final motionDisabled = _reduceMotion || isDark;
               final phase = motionDisabled ? 0.0 : _motionController.value;
               final pulse = motionDisabled ? 1.0 : widget.pulse.value;
@@ -204,12 +248,10 @@ class _EffectOverlayState extends State<EffectOverlay>
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  // darkビートでは非常に暗い背景のみ表示
                   EffectBackdrop(
                     rank: effectiveRank,
                     accent: isDark ? Colors.black : accent,
                   ),
-                  // パーティクル・放射線はdarkで非表示
                   if (!isDark)
                     RepaintBoundary(
                       child: CustomPaint(
@@ -222,15 +264,20 @@ class _EffectOverlayState extends State<EffectOverlay>
                         ),
                       ),
                     ),
-                  // 走査光: Reduce Motion または darkビートで非表示
                   if (!motionDisabled)
                     SweepBeam(accent: accent, phase: phase, impact: impact),
                   if (!isDark) EdgeFrame(accent: accent, impact: impact),
+                  if (!isDark)
+                    CabinetLamps(
+                      accent: accent,
+                      phase: phase,
+                      impact: impact,
+                      reduceMotion: motionDisabled,
+                    ),
                   SafeArea(
                     minimum: const EdgeInsets.fromLTRB(14, 12, 14, 18),
                     child: Column(
                       children: [
-                        // ランクバナー: darkビートでは非表示
                         if (!isDark)
                           RankBanner(
                             rankLabel: theme.label,
@@ -239,8 +286,11 @@ class _EffectOverlayState extends State<EffectOverlay>
                             phase: phase,
                             reduceMotion: motionDisabled,
                           ),
+                        if (!isDark) ...[
+                          const SizedBox(height: 8),
+                          HeatGauge(rank: effectiveRank, accent: accent),
+                        ],
                         const Spacer(),
-                        // ヘッドラインカード: darkビートでは最小限の表示
                         Transform.rotate(
                           angle: rotation,
                           child: Transform.translate(
@@ -259,7 +309,6 @@ class _EffectOverlayState extends State<EffectOverlay>
                           ),
                         ),
                         const Spacer(),
-                        // プログレス表示: darkビートでは非表示
                         if (!isDark)
                           ProgressPips(
                             current: _beatIndex,
