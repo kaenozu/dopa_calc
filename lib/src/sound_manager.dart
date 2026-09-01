@@ -87,11 +87,7 @@ class SoundManager {
       // 毎回1.0も含めて設定し、前ビートのrateが残らないようにする。
       await _backend.setPlaybackRate(profile.playbackRate);
     } catch (error, stackTrace) {
-      _report(
-        error,
-        stackTrace,
-        context: 'while playing an effect sound',
-      );
+      _report(error, stackTrace, context: 'while playing an effect sound');
     }
   }
 
@@ -103,11 +99,7 @@ class SoundManager {
     try {
       await _backend.stop();
     } catch (error, stackTrace) {
-      _report(
-        error,
-        stackTrace,
-        context: 'while stopping an effect sound',
-      );
+      _report(error, stackTrace, context: 'while stopping an effect sound');
     }
   }
 
