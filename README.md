@@ -9,12 +9,13 @@
 - 演算優先順位対応
 - 0除算エラー
 - 演出ランク: NORMAL / CHANCE / 激熱 / PREMIUM
-- 演出は複数ビートで段階的に煽る（NORMAL → CHANCE → 激熱 → 暗転 → 復活 → PREMIUMなど）
+- 演出は複数ビートで段階的に煽る（NORMAL → CHANCE → 激熱 → PUSH → シャッター → 暗転 → 復活 → PREMIUMなど）
+- 先バレ、7図柄ロック、3→2→1の擬似PUSH、左右シャッター、復活白フラッシュ、役物落下、777 JACKPOT
 - ランク帯、DOPA HEAT、盤面ランプ、発光文字、走査光、リング、粒子、放射線、流星、稲妻、フラッシュを重ねた演出
 - 最終ビート後に計算結果を「RESULT UNLOCKED」として大きく解放表示
-- `7 / 77 / 777 / 7777 / 8192` は強制PREMIUM
+- `7 / 77 / 777 / 7777 / 8192` は強制PREMIUM（8ビート、総尺9秒）
 - 結果 `0` は「全消灯」演出
-- 演出SKIP（結果解放中も利用可能）
+- 演出SKIP（PUSH・シャッター・暗転・結果解放中も利用可能）
 - Reduce Motion (`disableAnimations`) 対応
 - バイブ・クリック音
 - オリジナル生成SE（tick / chance / impact / premium）
