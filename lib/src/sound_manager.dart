@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 import 'effect_director.dart';
+import 'generated_sound_bank.dart';
 
 @immutable
 class SoundProfile {
@@ -28,12 +29,14 @@ class SoundManager {
     }
 
     final profile = profileFor(rank, beatIndex, cue);
+    final generatedBytes = GeneratedSoundBank.bytesFor(cue);
+    final Source source = generatedBytes == null
+        ? AssetSource('sounds/${profile.asset}')
+        : BytesSource(generatedBytes, mimeType: 'audio/wav');
+
     try {
       await _player.stop();
-      await _player.play(
-        AssetSource('sounds/${profile.asset}'),
-        volume: profile.volume,
-      );
+      await _player.play(source, volume: profile.volume);
       // audioplayers は playbackRate を play/resume 後に設定する仕様。
       // 毎回1.0も含めて設定し、前ビートのrateが残らないようにする。
       await _player.setPlaybackRate(profile.playbackRate);
