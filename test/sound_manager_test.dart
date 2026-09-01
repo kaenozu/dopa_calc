@@ -3,15 +3,10 @@ import 'package:dopa_calc/src/sound_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   group('SoundManager', () {
     test('standardは従来のランク/ビートマッピングを維持する', () {
-      final manager = SoundManager();
-      addTearDown(manager.dispose);
-
       String asset(EffectRank rank, int beatIndex) {
-        return manager.assetFor(rank, beatIndex, EffectCue.standard);
+        return SoundManager.assetFor(rank, beatIndex, EffectCue.standard);
       }
 
       expect(asset(EffectRank.normal, 0), 'tick.wav');
@@ -27,11 +22,8 @@ void main() {
     });
 
     test('EffectCueがビート番号より優先される', () {
-      final manager = SoundManager();
-      addTearDown(manager.dispose);
-
       String asset(EffectCue cue) {
-        return manager.assetFor(EffectRank.normal, 99, cue);
+        return SoundManager.assetFor(EffectRank.normal, 99, cue);
       }
 
       expect(asset(EffectCue.preAlert), 'chance.wav');
