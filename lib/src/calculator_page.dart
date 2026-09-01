@@ -137,6 +137,7 @@ class _CalculatorPageState extends State<CalculatorPage>
   }
 
   void _clear() {
+    unawaited(_effectPlayer.cancelPending());
     _stopPulse();
     setState(() {
       _activePlan = null;
@@ -171,6 +172,7 @@ class _CalculatorPageState extends State<CalculatorPage>
 
   void _skipEffect() {
     if (!_controller.isResolving) return;
+    unawaited(_effectPlayer.cancelPending());
     _stopPulse();
     _controller.finishResult(_controller.lastFormattedResult!);
     setState(() {
@@ -246,6 +248,7 @@ class _CalculatorPageState extends State<CalculatorPage>
                   _effectPlayer.playBeat(
                     plan.rankForBeat(event.beatIndex),
                     event,
+                    cue: plan.beats[event.beatIndex].cue,
                   ),
                 ),
                 onSkip: _skipEffect,
