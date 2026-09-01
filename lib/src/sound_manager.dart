@@ -8,20 +8,19 @@ class SoundManager {
 
   SoundManager({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
-  Future<void> playBeat(
-    EffectRank rank,
-    int beatIndex, {
-    EffectCue cue = EffectCue.standard,
-  }) async {
-    final asset = _assetFor(rank, beatIndex, cue: cue);
+  Future<void> playBeat(EffectRank rank, int beatIndex, EffectCue cue) async {
+    final asset = _assetFor(rank, beatIndex, cue);
     try {
       await _player.stop();
       await _player.play(AssetSource('sounds/$asset'));
     } catch (error, stackTrace) {
-      _reportPlaybackError(
-        error,
-        stackTrace,
-        'while playing an effect sound',
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'dopa_calc',
+          context: ErrorDescription('while playing an effect sound'),
+        ),
       );
     }
   }
@@ -30,27 +29,24 @@ class SoundManager {
     try {
       await _player.stop();
     } catch (error, stackTrace) {
-      _reportPlaybackError(
-        error,
-        stackTrace,
-        'while stopping an effect sound',
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'dopa_calc',
+          context: ErrorDescription('while stopping an effect sound'),
+        ),
       );
     }
   }
 
   Future<void> dispose() => _player.dispose();
 
-  String assetFor(
-    EffectRank rank,
-    int beatIndex, {
-    EffectCue cue = EffectCue.standard,
-  }) => _assetFor(rank, beatIndex, cue: cue);
+  String assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
+    return _assetFor(rank, beatIndex, cue);
+  }
 
-  String _assetFor(
-    EffectRank rank,
-    int beatIndex, {
-    required EffectCue cue,
-  }) {
+  String _assetFor(EffectRank rank, int beatIndex, EffectCue cue) {
     switch (cue) {
       case EffectCue.preAlert:
         return 'chance.wav';
@@ -78,20 +74,5 @@ class SoundManager {
       case EffectRank.premium:
         return beatIndex >= 2 ? 'premium.wav' : 'chance.wav';
     }
-  }
-
-  void _reportPlaybackError(
-    Object error,
-    StackTrace stackTrace,
-    String context,
-  ) {
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stackTrace,
-        library: 'dopa_calc',
-        context: ErrorDescription(context),
-      ),
-    );
   }
 }
