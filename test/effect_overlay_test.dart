@@ -58,6 +58,20 @@ EffectPlan _shortPlan() {
   );
 }
 
+EffectPlan _shortPlanForRank(EffectRank rank) {
+  return EffectPlan(
+    rank: rank,
+    beats: const [
+      EffectBeat(
+        headline: 'テスト',
+        subline: '',
+        duration: Duration(milliseconds: 100),
+        intensity: EffectIntensity.medium,
+      ),
+    ],
+  );
+}
+
 Widget _testApp({
   required EffectPlan plan,
   required bool disableAnimations,
@@ -145,6 +159,40 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1500));
 
     expect(skipCalled, isTrue);
+  });
+
+  testWidgets('NORMAL結果ではJACKPOT役物を出さない', (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        plan: _shortPlanForRank(EffectRank.normal),
+        disableAnimations: true,
+        resultText: '42',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+
+    expect(find.text('RESULT UNLOCKED'), findsOneWidget);
+    expect(find.text('役 物 作 動'), findsNothing);
+    expect(find.text('777 JACKPOT'), findsNothing);
+    expect(find.text('JACKPOT'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('激熱結果では復活役物を出しJACKPOTは出さない', (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        plan: _shortPlanForRank(EffectRank.gekiatsu),
+        disableAnimations: true,
+        resultText: '42',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+
+    expect(find.text('RESULT UNLOCKED'), findsOneWidget);
+    expect(find.text('役 物 作 動'), findsOneWidget);
+    expect(find.text('777 JACKPOT'), findsNothing);
+    expect(find.text('JACKPOT'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('結果クライマックス中もSKIPできる', (tester) async {
