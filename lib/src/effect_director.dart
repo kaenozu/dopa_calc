@@ -5,6 +5,9 @@ enum EffectRank { normal, chance, gekiatsu, premium }
 
 enum EffectIntensity { low, medium, high, extreme }
 
+/// 遊技機らしい予告・役物の出し分け。
+enum EffectCue { standard, preAlert, symbolLock, blackout, revival, jackpot }
+
 /// ランクごとの外観テーマ。
 class RankTheme {
   const RankTheme({
@@ -105,6 +108,7 @@ class EffectBeat {
     required this.duration,
     this.intensity = EffectIntensity.low,
     this.displayRank,
+    this.cue = EffectCue.standard,
     this.dark = false,
   });
 
@@ -115,6 +119,9 @@ class EffectBeat {
 
   /// このビートで表示するランク。nullならPlanのrankを使用。
   final EffectRank? displayRank;
+
+  /// 先バレ・図柄ロック・復活・JACKPOTなどの演出種別。
+  final EffectCue cue;
 
   /// trueのとき、全画面暗転＋最小限のエフェクト（ハズレ偽装用）。
   final bool dark;
@@ -156,46 +163,51 @@ class EffectDirector {
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
           ),
-          // 段階2: CHANCEへ昇格
+          // 段階2: 先バレ＋CHANCEへ昇格。
           EffectBeat(
             headline: '先 読 み 発 生',
             subline: '数字がざわついています',
             duration: const Duration(milliseconds: 1500),
             intensity: EffectIntensity.medium,
             displayRank: EffectRank.chance,
+            cue: EffectCue.preAlert,
           ),
-          // 段階3: 激熱へ昇格
+          // 段階3: 7図柄ロック＋激熱へ昇格。
           EffectBeat(
             headline: '超・確・定',
             subline: '7系プレミアム確認中',
             duration: const Duration(milliseconds: 1800),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.symbolLock,
           ),
-          // ハズレ偽装: 一瞬暗転・無音
+          // ハズレ偽装: 一瞬暗転・無音。
           EffectBeat(
             headline: '…………',
             subline: '',
             duration: const Duration(milliseconds: 800),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
+            cue: EffectCue.blackout,
             dark: true,
           ),
-          // 復活
+          // 復活: 役物を落とす。
           EffectBeat(
             headline: '復 活',
             subline: 'まだ終わってない',
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.revival,
           ),
-          // クライマックス: PREMIUM RUSH解禁
+          // クライマックス: 777ロック＋PREMIUM RUSH解禁。
           EffectBeat(
             headline: 'ドパ計算RUSH',
             subline: '答えは最初から決まっている',
             duration: const Duration(milliseconds: 2500),
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.premium,
+            cue: EffectCue.jackpot,
           ),
         ],
       );
@@ -210,6 +222,7 @@ class EffectDirector {
             subline: '画面が仕事をやめました',
             duration: const Duration(milliseconds: 1500),
             intensity: EffectIntensity.high,
+            cue: EffectCue.preAlert,
           ),
           EffectBeat(
             headline: '…………',
@@ -222,6 +235,7 @@ class EffectDirector {
             subline: 'そして答えは0',
             duration: const Duration(milliseconds: 1800),
             intensity: EffectIntensity.high,
+            cue: EffectCue.revival,
           ),
         ],
       );
@@ -238,6 +252,7 @@ class EffectDirector {
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.medium,
             displayRank: EffectRank.chance,
+            cue: EffectCue.preAlert,
           ),
           EffectBeat(
             headline: '激 熱',
@@ -245,6 +260,7 @@ class EffectDirector {
             duration: const Duration(milliseconds: 1500),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.symbolLock,
           ),
           EffectBeat(
             headline: '…………',
@@ -252,6 +268,7 @@ class EffectDirector {
             duration: const Duration(milliseconds: 800),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
+            cue: EffectCue.blackout,
             dark: true,
           ),
           EffectBeat(
@@ -260,6 +277,7 @@ class EffectDirector {
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
+            cue: EffectCue.revival,
           ),
           EffectBeat(
             headline: '超 計 算',
@@ -267,6 +285,7 @@ class EffectDirector {
             duration: const Duration(milliseconds: 2600),
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.premium,
+            cue: EffectCue.jackpot,
           ),
         ],
       );
@@ -280,18 +299,21 @@ class EffectDirector {
             subline: '期待しても計算結果は変わりません',
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.high,
+            cue: EffectCue.preAlert,
           ),
           EffectBeat(
             headline: '激 熱',
             subline: '期待度 92%（演出上）',
             duration: const Duration(milliseconds: 1800),
             intensity: EffectIntensity.extreme,
+            cue: EffectCue.symbolLock,
           ),
           EffectBeat(
             headline: 'まだだ！！',
             subline: '無駄にもう一回煽ります',
             duration: const Duration(milliseconds: 1800),
             intensity: EffectIntensity.high,
+            cue: EffectCue.revival,
           ),
         ],
       );
@@ -305,12 +327,14 @@ class EffectDirector {
             subline: 'ただの計算なのに期待度UP',
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.medium,
+            cue: EffectCue.preAlert,
           ),
           EffectBeat(
             headline: '計 算 リ ー チ',
             subline: '答えを出すだけです',
             duration: const Duration(milliseconds: 1800),
             intensity: EffectIntensity.medium,
+            cue: EffectCue.symbolLock,
           ),
         ],
       );
