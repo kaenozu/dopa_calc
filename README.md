@@ -18,15 +18,18 @@
 - 演出SKIP（PUSH・シャッター・暗転・結果解放中も利用可能）
 - Reduce Motion (`disableAnimations`) 対応
 - `EffectCue` に同期したSE・ハプティクス
-  - 先バレ: `chance.wav` + 中振動
+  - 先バレ: 専用上昇チャープ + 中振動
   - 図柄ロック: `impact.wav` + 強振動
   - PUSH: `impact.wav` + 中→中→強の3段振動
-  - シャッター: `impact.wav` + 強→長振動
+  - シャッター: 専用の低音衝撃＋金属リング＋ノイズ + 強→長振動
   - 完全暗転: 再生中SE停止 + 無振動
-  - 復活: `premium.wav` + 長→強振動
-  - JACKPOT: `premium.wav` + 長→強→長の3段振動
+  - 復活: 専用の低音衝撃＋上昇スイープ + 長→強振動
+  - JACKPOT: 専用4音アルペジオ＋高域スパークル + 長→強→長の3段振動
+- Cueごとに音量・再生速度も調整し、同じ素材を使う演出間にも重量感/鋭さの差を付与
+- 先バレ/シャッター/復活/JACKPOTの専用SEは16bit mono PCM WAVをDartで合成し、`BytesSource` で再生
+- 専用SEはSoundManager生成時にプリウォームして演出開始時の合成負荷を回避
 - SKIP/RESET時は再生中SEと予約済み遅延ハプティクスをキャンセル
-- オリジナル生成SE（tick / chance / impact / premium）
+- 既存オリジナルSE（tick / chance / impact / premium）も継続利用
 - 音声再生: `audioplayers ^6.8.1`
 
 ## 起動
@@ -58,7 +61,7 @@ flutter build apk --debug
 
 ## MVPで意図的に未実装
 
-- BGM・より多彩なSE
+- BGM
 - 広告
 - 設定画面
 - 計算履歴
