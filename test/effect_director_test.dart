@@ -69,6 +69,21 @@ void main() {
       ]);
     });
 
+    test('PREMIUMシーケンスは遊技機キューが段階的に進行する', () {
+      final director = EffectDirector(nextInt: (_) => 55);
+      final plan = director.planFor('777');
+      final cues = plan.beats.map((b) => b.cue).toList();
+
+      expect(cues, [
+        EffectCue.standard,
+        EffectCue.preAlert,
+        EffectCue.symbolLock,
+        EffectCue.blackout,
+        EffectCue.revival,
+        EffectCue.jackpot,
+      ]);
+    });
+
     test('有効ランクは視覚・音で同じ昇格順を返す', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
@@ -98,6 +113,7 @@ void main() {
       final plan = director.planFor('777');
       final darkBeat = plan.beats[3];
       expect(darkBeat.dark, isTrue);
+      expect(darkBeat.cue, EffectCue.blackout);
       expect(darkBeat.headline, '…………');
       expect(darkBeat.intensity, EffectIntensity.low);
     });
@@ -139,7 +155,9 @@ void main() {
       expect(plan.rank, EffectRank.premium);
       expect(plan.beats.length, 5);
       expect(plan.beats[2].dark, isTrue);
+      expect(plan.beats[2].cue, EffectCue.blackout);
       expect(plan.beats.last.displayRank, EffectRank.premium);
+      expect(plan.beats.last.cue, EffectCue.jackpot);
     });
   });
 }
