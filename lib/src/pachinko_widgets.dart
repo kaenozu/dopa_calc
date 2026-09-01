@@ -92,8 +92,7 @@ class _LampCluster extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(3, (index) {
-        final angle =
-            (phase + (index + offset) * 0.14) * math.pi * 2;
+        final angle = (phase + (index + offset) * 0.14) * math.pi * 2;
         final wave = reduceMotion ? 0.78 : (math.sin(angle) + 1) / 2;
         final rawAlpha = (0.34 + wave * 0.6) * impact;
         final alpha = rawAlpha.clamp(0.0, 0.94).toDouble();
@@ -243,10 +242,7 @@ class ResultClimax extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.68),
               borderRadius: BorderRadius.circular(999),
@@ -279,10 +275,7 @@ class ResultClimax extends StatelessWidget {
               width: double.infinity,
               constraints: const BoxConstraints(maxWidth: 760),
               height: 170,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.58),
                 borderRadius: BorderRadius.circular(32),
