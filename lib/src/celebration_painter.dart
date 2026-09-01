@@ -117,7 +117,9 @@ class CelebrationPainter extends CustomPainter {
       paint
         ..strokeWidth = 1.5 + glow * 2.6
         ..color = (i.isEven ? Colors.white : accent).withValues(
-          alpha: ((0.28 + glow * 0.42) * impact).clamp(0.0, 0.9),
+          alpha: ((0.28 + glow * 0.42) * impact)
+              .clamp(0.0, 0.9)
+              .toDouble(),
         );
       canvas.drawLine(
         Offset(x, y),
@@ -154,7 +156,7 @@ class CelebrationPainter extends CustomPainter {
       paint
         ..strokeWidth = 1.5 + impact * 1.8
         ..color = (bolt.isEven ? Colors.white : accent).withValues(
-          alpha: (0.18 + impact * 0.16).clamp(0.0, 0.42),
+          alpha: (0.18 + impact * 0.16).clamp(0.0, 0.42).toDouble(),
         );
       canvas.drawPath(path, paint);
     }
