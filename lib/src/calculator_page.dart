@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'calculator_engine.dart';
 import 'effect_director.dart';
 import 'effect_overlay.dart';
-import 'sound_manager.dart';
+import 'effect_player.dart';
 
 class CalculatorPage extends StatefulWidget {
   const CalculatorPage({super.key});
@@ -21,7 +21,7 @@ class _CalculatorPageState extends State<CalculatorPage>
   static const _maxExpressionLength = 48;
 
   final _director = EffectDirector();
-  final _soundManager = SoundManager();
+  final _effectPlayer = EffectPlayer();
 
   late final AnimationController _pulseController;
   String _expression = '';
@@ -85,7 +85,7 @@ class _CalculatorPageState extends State<CalculatorPage>
   void dispose() {
     _resultTimer?.cancel();
     _pulseController.dispose();
-    unawaited(_soundManager.dispose());
+    unawaited(_effectPlayer.dispose());
     super.dispose();
   }
 
@@ -373,8 +373,8 @@ class _CalculatorPageState extends State<CalculatorPage>
               EffectOverlay(
                 plan: plan,
                 pulse: _pulseController,
-                onBeat: (beatIndex) =>
-                    unawaited(_soundManager.playBeat(plan.rank, beatIndex)),
+                onBeat: (event) =>
+                    unawaited(_effectPlayer.playBeat(plan.rank, event)),
                 onSkip: _skipEffect,
                 resultText: _lastFormattedResult,
               ),

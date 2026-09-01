@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'effect_director.dart';
+import 'effect_player.dart';
 
 class EffectOverlay extends StatefulWidget {
   const EffectOverlay({
@@ -18,7 +18,7 @@ class EffectOverlay extends StatefulWidget {
 
   final EffectPlan plan;
   final Animation<double> pulse;
-  final ValueChanged<int> onBeat;
+  final ValueChanged<BeatEvent> onBeat;
   final VoidCallback onSkip;
 
   /// 最後のビート後に表示する計算結果。nullなら通常のビート表示を維持。
@@ -50,7 +50,12 @@ class _EffectOverlayState extends State<EffectOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 420),
     );
-    widget.onBeat(_beatIndex);
+    widget.onBeat(
+      BeatEvent(
+        beatIndex: _beatIndex,
+        intensity: widget.plan.beats[_beatIndex].intensity,
+      ),
+    );
     _scheduleNextBeat();
   }
 
@@ -104,22 +109,18 @@ class _EffectOverlayState extends State<EffectOverlay>
       }
 
       setState(() => _beatIndex++);
-      widget.onBeat(_beatIndex);
-      unawaited(_impactFor(widget.plan.beats[_beatIndex].intensity));
+      // BeatEventでビート情報を渡す（音+ハプティクスはEffectPlayerが処理）
+      widget.onBeat(
+        BeatEvent(
+          beatIndex: _beatIndex,
+          intensity: widget.plan.beats[_beatIndex].intensity,
+        ),
+      );
       if (!_reduceMotion) {
         _flashController.forward(from: 0);
       }
       _scheduleNextBeat();
     });
-  }
-
-  Future<void> _impactFor(EffectIntensity intensity) {
-    return switch (intensity) {
-      EffectIntensity.low => HapticFeedback.selectionClick(),
-      EffectIntensity.medium => HapticFeedback.mediumImpact(),
-      EffectIntensity.high => HapticFeedback.heavyImpact(),
-      EffectIntensity.extreme => HapticFeedback.vibrate(),
-    };
   }
 
   @override
