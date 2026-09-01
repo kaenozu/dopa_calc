@@ -74,14 +74,18 @@ class _PushPrompt extends StatelessWidget {
   final double progress;
   final bool reduceMotion;
 
+  String _countdownFor(double value) {
+    if (value < 0.34) return '3';
+    if (value < 0.67) return '2';
+    return '1';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final countdown = progress < 0.34
-        ? '3'
-        : progress < 0.67
-        ? '2'
-        : '1';
-    final wave = reduceMotion ? 0.6 : (math.sin(phase * math.pi * 8) + 1) / 2;
+    final countdown = _countdownFor(progress);
+    final wave = reduceMotion
+        ? 0.6
+        : (math.sin(phase * math.pi * 8) + 1) / 2;
     final scale = reduceMotion ? 1.0 : 0.94 + wave * 0.1;
 
     return Stack(
@@ -241,10 +245,10 @@ class _ShutterDoors extends StatelessWidget {
         (value / 0.62).clamp(0.0, 1.0).toDouble(),
       );
     }
-    return 1 -
-        Curves.easeOutExpo.transform(
-          ((value - 0.62) / 0.38).clamp(0.0, 1.0).toDouble(),
-        );
+    final reopen = Curves.easeOutExpo.transform(
+      ((value - 0.62) / 0.38).clamp(0.0, 1.0).toDouble(),
+    );
+    return 1 - reopen;
   }
 }
 
@@ -321,7 +325,9 @@ class _RevivalBurst extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final normalized = (progress / 0.22).clamp(0.0, 1.0).toDouble();
-    final flash = reduceMotion ? 0.12 : 1 - Curves.easeOut.transform(normalized);
+    final flash = reduceMotion
+        ? 0.12
+        : 1 - Curves.easeOut.transform(normalized);
     final ringScale = reduceMotion ? 1.0 : 0.45 + normalized * 1.7;
 
     return Stack(
