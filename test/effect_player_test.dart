@@ -15,9 +15,6 @@ class _FakeSoundManager implements SoundManager {
   }
 
   @override
-  String assetFor(EffectRank rank, int beatIndex, EffectCue cue) => '';
-
-  @override
   Future<void> stop() async {
     stopCalls++;
   }
