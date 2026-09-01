@@ -1,5 +1,6 @@
 import 'package:dopa_calc/src/effect_director.dart';
 import 'package:dopa_calc/src/effect_overlay.dart';
+import 'package:dopa_calc/src/effect_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -203,17 +204,19 @@ void main() {
     expect(skipCalled, isTrue);
   });
 
-  testWidgets('darkビートではヘッドラインカードが最小表示になる', (tester) async {
+  testWidgets('darkビートでは背景エフェクトも消えて完全暗転になる', (tester) async {
     await tester.pumpWidget(
       _testApp(plan: _planWithDarkBeat(), disableAnimations: true),
     );
 
     await tester.pump(const Duration(milliseconds: 32));
     expect(find.text('テスト'), findsWidgets);
+    expect(find.byType(EffectBackdrop), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('…………'), findsWidgets);
     expect(find.text('DOPA HEAT'), findsNothing);
+    expect(find.byType(EffectBackdrop), findsNothing);
 
     expect(tester.takeException(), isNull);
   });

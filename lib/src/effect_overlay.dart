@@ -248,10 +248,10 @@ class _EffectOverlayState extends State<EffectOverlay>
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  EffectBackdrop(
-                    rank: effectiveRank,
-                    accent: isDark ? Colors.black : accent,
-                  ),
+                  if (isDark)
+                    const ColoredBox(color: Colors.black)
+                  else
+                    EffectBackdrop(rank: effectiveRank, accent: accent),
                   if (!isDark)
                     RepaintBoundary(
                       child: CustomPaint(
