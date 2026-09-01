@@ -172,22 +172,23 @@ class _EffectOverlayState extends State<EffectOverlay>
               _flashController,
             ]),
             builder: (context, child) {
-              final phase = _reduceMotion ? 0.0 : _motionController.value;
-              final pulse = _reduceMotion ? 1.0 : widget.pulse.value;
+              // Reduce Motion設定 または darkビート で全モーション無効
+              final motionDisabled = _reduceMotion || isDark;
+              final phase = motionDisabled ? 0.0 : _motionController.value;
+              final pulse = motionDisabled ? 1.0 : widget.pulse.value;
               final accent = _animatedAccent(baseAccent, effectiveRank, phase);
-              // darkビートではimpactを強制0にし、全効果を抑制
               final impact = isDark ? 0.0 : _intensityFactor(beat.intensity);
-              final flash = _reduceMotion || isDark
+              final flash = motionDisabled
                   ? 0.0
                   : (1 - Curves.easeOut.transform(_flashController.value)) *
                         impact;
-              final shakeX = _reduceMotion || isDark
+              final shakeX = motionDisabled
                   ? 0.0
                   : math.sin(phase * math.pi * 14) * 5.5 * impact;
-              final shakeY = _reduceMotion || isDark
+              final shakeY = motionDisabled
                   ? 0.0
                   : math.cos(phase * math.pi * 18) * 3.5 * impact;
-              final rotation = _reduceMotion || isDark
+              final rotation = motionDisabled
                   ? 0.0
                   : math.sin(phase * math.pi * 10) * 0.012 * impact;
 
@@ -212,8 +213,8 @@ class _EffectOverlayState extends State<EffectOverlay>
                         ),
                       ),
                     ),
-                  // 走査光・エッジフレームもdarkで非表示
-                  if (!_reduceMotion && !isDark)
+                  // 走査光: Reduce Motion または darkビートで非表示
+                  if (!motionDisabled)
                     _SweepBeam(accent: accent, phase: phase, impact: impact),
                   if (!isDark) _EdgeFrame(accent: accent, impact: impact),
                   SafeArea(
@@ -227,7 +228,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                             rankSubtitle: rankSubtitle,
                             accent: accent,
                             phase: phase,
-                            reduceMotion: _reduceMotion,
+                            reduceMotion: motionDisabled,
                           ),
                         const Spacer(),
                         // ヘッドラインカード: darkビートでは最小限の表示
@@ -255,7 +256,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                             current: _beatIndex,
                             total: plan.beats.length,
                             accent: accent,
-                            reduceMotion: _reduceMotion,
+                            reduceMotion: motionDisabled,
                           ),
                         const SizedBox(height: 16),
                         SizedBox(
