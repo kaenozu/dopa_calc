@@ -624,14 +624,40 @@ class _Display extends StatelessWidget {
   }
 }
 
-class _CalcKey extends StatelessWidget {
+class _CalcKey extends StatefulWidget {
   const _CalcKey({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
 
-  bool get _isOperator => const {'÷', '×', '−', '+', '='}.contains(label);
-  bool get _isUtility => const {'AC', '⌫', '±'}.contains(label);
+  @override
+  State<_CalcKey> createState() => _CalcKeyState();
+}
+
+class _CalcKeyState extends State<_CalcKey>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pressController;
+
+  bool get _isOperator => const {'÷', '×', '−', '+', '='}.contains(widget.label);
+  bool get _isUtility => const {'AC', '⌫', '±'}.contains(widget.label);
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 110),
+      reverseDuration: const Duration(milliseconds: 280),
+      lowerBound: 0,
+      upperBound: 1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -644,24 +670,67 @@ class _CalcKey extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: label,
-      child: Material(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.w900,
-                color: foreground,
+      label: widget.label,
+      child: AnimatedBuilder(
+        animation: _pressController,
+        builder: (context, child) {
+          final pressed = _pressController.value;
+          return Transform.scale(
+            scale: 1 - pressed * 0.075,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: (_isOperator
+                            ? const Color(0xFFFFD400)
+                            : const Color(0xFF00E5FF))
+                        .withValues(alpha: pressed * 0.72),
+                    blurRadius: 24 * pressed,
+                    spreadRadius: 2 * pressed,
+                  ),
+                ],
+              ),
+              child: Material(
+                color: background,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  splashColor: (_isOperator
+                          ? Colors.white
+                          : const Color(0xFF00E5FF))
+                      .withValues(alpha: 0.38),
+                  highlightColor: Colors.white.withValues(alpha: 0.12),
+                  onTapDown: (_) => _pressController.forward(),
+                  onTapCancel: () => _pressController.reverse(),
+                  onTap: () {
+                    widget.onTap();
+                    _pressController.reverse();
+                  },
+                  child: Center(
+                    child: Text(
+                      widget.label,
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.w900,
+                        color: foreground,
+                        shadows: [
+                          Shadow(
+                            color: (_isOperator
+                                    ? Colors.white
+                                    : const Color(0xFF00E5FF))
+                                .withValues(alpha: pressed * 0.7),
+                            blurRadius: 12 * pressed,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
