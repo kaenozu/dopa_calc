@@ -52,8 +52,7 @@ class CelebrationPainter extends CustomPainter {
       ..blendMode = BlendMode.plus;
     for (var i = 0; i < 16; i++) {
       final angle = i * math.pi * 2 / 16 + phase * 0.9;
-      final r =
-          size.shortestSide * (0.18 + 0.42 * ((i % 2 == 0) ? 1 : 0.6));
+      final r = size.shortestSide * (0.18 + 0.42 * ((i % 2 == 0) ? 1 : 0.6));
       paint
         ..strokeWidth = 1.8 + impact * 2.2
         ..color = Colors.white.withValues(alpha: 0.08 + 0.16 * impact);
@@ -132,10 +131,8 @@ class CelebrationPainter extends CustomPainter {
       final drift = math.sin((phase * speed + baseY) * math.pi * 2);
       final x = (baseX + drift * 0.035 * rankFactor) * size.width;
       final y = ((baseY - phase * speed * 0.24) % 1) * size.height;
-      final radius =
-          1.6 + _unitNoise(seed * 13 + 4) * (4.5 + rank.index);
-      final alpha =
-          (0.25 + _unitNoise(seed * 17 + 9) * 0.62) * impact;
+      final radius = 1.6 + _unitNoise(seed * 13 + 4) * (4.5 + rank.index);
+      final alpha = (0.25 + _unitNoise(seed * 17 + 9) * 0.62) * impact;
       paint.color = _particleColor(
         seed,
       ).withValues(alpha: alpha.clamp(0.0, 1.0).toDouble());
