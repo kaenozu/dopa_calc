@@ -205,12 +205,7 @@ class EffectDirector {
         '超ドパRUSH',
         'PREMIUM確定',
       ];
-      final jackpotSublines = [
-        '答えは最初から決まっている',
-        '虹色に輝け',
-        '全てを解放する',
-        'ここからが本番',
-      ];
+      final jackpotSublines = ['答えは最初から決まっている', '虹色に輝け', '全てを解放する', 'ここからが本番'];
       final openers = [
         ('・・・・・・', '何かがおかしい'),
         ('ざわ・・・', '空気が変わった'),
