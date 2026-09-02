@@ -133,9 +133,7 @@ class _HoldStageDisplay extends StatelessWidget {
     final color = stage == HoldStage.rainbow && !reduceMotion
         ? HSVColor.fromAHSV(1, (phase * 360) % 360, 0.88, 1).toColor()
         : _staticColor;
-    final wave = reduceMotion
-        ? 0.5
-        : (math.sin(phase * math.pi * 4) + 1) / 2;
+    final wave = reduceMotion ? 0.5 : (math.sin(phase * math.pi * 4) + 1) / 2;
     final scale = reduceMotion ? 1.0 : 0.96 + wave * 0.08;
 
     return Align(
@@ -219,9 +217,7 @@ class _PseudoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wave = reduceMotion
-        ? 0.5
-        : (math.sin(phase * math.pi * 6) + 1) / 2;
+    final wave = reduceMotion ? 0.5 : (math.sin(phase * math.pi * 6) + 1) / 2;
 
     return Align(
       alignment: const Alignment(0, -0.52),
@@ -375,9 +371,10 @@ class _SymbolLockBackdrop extends StatelessWidget {
     SymbolStyle.normal => Colors.white,
     SymbolStyle.red => const Color(0xFFFF453A),
     SymbolStyle.gold => const Color(0xFFFFD700),
-    SymbolStyle.seven => reduceMotion
-        ? const Color(0xFFFFD700)
-        : HSVColor.fromAHSV(1, (phase * 360) % 360, 0.82, 1).toColor(),
+    SymbolStyle.seven =>
+      reduceMotion
+          ? const Color(0xFFFFD700)
+          : HSVColor.fromAHSV(1, (phase * 360) % 360, 0.82, 1).toColor(),
   };
 
   @override
@@ -438,7 +435,10 @@ class _SymbolLockBackdrop extends StatelessWidget {
                               fontStyle: FontStyle.italic,
                               shadows: locked
                                   ? [
-                                      Shadow(color: symbolColor, blurRadius: 30),
+                                      Shadow(
+                                        color: symbolColor,
+                                        blurRadius: 30,
+                                      ),
                                       const Shadow(
                                         color: Colors.black,
                                         blurRadius: 8,
@@ -483,9 +483,7 @@ class _RevealBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wave = reduceMotion
-        ? 0.5
-        : (math.sin(phase * math.pi * 4) + 1) / 2;
+    final wave = reduceMotion ? 0.5 : (math.sin(phase * math.pi * 4) + 1) / 2;
 
     return Align(
       alignment: const Alignment(0, 0.58),
@@ -497,7 +495,9 @@ class _RevealBadge extends StatelessWidget {
             _label,
             key: Key('reveal-state-${state.name}'),
             style: TextStyle(
-              color: state == RevealState.fakeout ? Colors.white54 : Colors.white,
+              color: state == RevealState.fakeout
+                  ? Colors.white54
+                  : Colors.white,
               fontSize: state == RevealState.confirmed ? 28 : 22,
               fontWeight: FontWeight.w900,
               letterSpacing: 4,
@@ -531,9 +531,7 @@ class _MechanicalDropGate extends StatelessWidget {
     final wave = reduceMotion
         ? 1.0
         : (math.sin(phase * math.pi * 2 - math.pi / 2) + 1) / 2;
-    final drop = Curves.easeOutBack.transform(
-      wave.clamp(0.0, 1.0).toDouble(),
-    );
+    final drop = Curves.easeOutBack.transform(wave.clamp(0.0, 1.0).toDouble());
     final label = cue == EffectCue.jackpot ? '777 JACKPOT' : '役 物 作 動';
 
     return Align(
