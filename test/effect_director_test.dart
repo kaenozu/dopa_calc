@@ -73,7 +73,9 @@ void main() {
 
     test('PREMIUMは青→緑→赤→金→虹へ保留昇格する', () {
       final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
-      final stages = plan.beats.map((beat) => beat.visualState.holdStage).toList();
+      final stages = plan.beats
+          .map((beat) => beat.visualState.holdStage)
+          .toList();
 
       expect(stages, [
         HoldStage.blue,
@@ -89,7 +91,9 @@ void main() {
 
     test('PREMIUMは擬似連を×1→×2→×3へ積み上げる', () {
       final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
-      final counts = plan.beats.map((beat) => beat.visualState.pseudoCount).toList();
+      final counts = plan.beats
+          .map((beat) => beat.visualState.pseudoCount)
+          .toList();
 
       expect(counts, [0, 1, 2, 3, 3, 3, 3, 3]);
     });
@@ -98,18 +102,15 @@ void main() {
       final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
 
       expect(
-        plan.beats.take(7).any(
-          (beat) => beat.visualState.symbolStyle == SymbolStyle.seven,
-        ),
+        plan.beats
+            .take(7)
+            .any((beat) => beat.visualState.symbolStyle == SymbolStyle.seven),
         isFalse,
       );
       expect(plan.beats.last.visualState.symbolStyle, SymbolStyle.seven);
       expect(plan.beats.last.visualState.lockedSymbols, 3);
       expect(plan.beats.last.visualState.holdStage, HoldStage.rainbow);
-      expect(
-        plan.beats.last.visualState.revealState,
-        RevealState.confirmed,
-      );
+      expect(plan.beats.last.visualState.revealState, RevealState.confirmed);
     });
 
     test('PREMIUMシーケンスはPUSHとシャッターを経てJACKPOTへ進行する', () {
