@@ -17,6 +17,32 @@ enum EffectCue {
   jackpot,
 }
 
+/// 保留の段階。期待度が上がるほど後ろの値へ進む。
+enum HoldStage { none, blue, green, red, gold, rainbow }
+
+/// 図柄ロックの見た目。7図柄はPREMIUM専用。
+enum SymbolStyle { normal, red, gold, seven }
+
+/// 演出の物語上の状態。
+enum RevealState { tease, fakeout, revival, confirmed }
+
+/// ビートをまたいで引き継ぐ、期待度の視覚状態。
+class EffectVisualState {
+  const EffectVisualState({
+    this.holdStage = HoldStage.none,
+    this.pseudoCount = 0,
+    this.lockedSymbols = 0,
+    this.symbolStyle = SymbolStyle.normal,
+    this.revealState = RevealState.tease,
+  });
+
+  final HoldStage holdStage;
+  final int pseudoCount;
+  final int lockedSymbols;
+  final SymbolStyle symbolStyle;
+  final RevealState revealState;
+}
+
 /// ランクごとの外観テーマ。
 class RankTheme {
   const RankTheme({
@@ -119,6 +145,7 @@ class EffectBeat {
     this.displayRank,
     this.cue = EffectCue.standard,
     this.dark = false,
+    this.visualState = const EffectVisualState(),
   });
 
   final String headline;
@@ -134,6 +161,9 @@ class EffectBeat {
 
   /// trueのとき、全画面暗転＋最小限のエフェクト（ハズレ偽装用）。
   final bool dark;
+
+  /// 保留・疑似連・図柄ロック・復活状態を明示した視覚状態。
+  final EffectVisualState visualState;
 }
 
 class EffectPlan {
@@ -167,34 +197,15 @@ class EffectDirector {
     final canonical = formattedResult.replaceAll(',', '');
 
     if (_isPremiumNumber(canonical)) {
-      // PREMIUMは毎回少し違う顔を見せる（保留変化・疑似連イメージでバリエーション）
       final premiumVariant = _roll(4);
       final revivalHeadlines = ['復 活', 'まだだ!!', '諦めるな', '起きろ!!'];
-      final jackpotHeadlines = ['ドパ計算RUSH', '777 JACKPOT', '超ドパRUSH', 'PREMIUM確定'];
-      final jackpotSublines = [
-        '答えは最初から決まっている',
-        '虹色に輝け',
-        '全てを解放する',
-        'ここからが本番',
+      final jackpotHeadlines = [
+        'ドパ計算RUSH',
+        '777 JACKPOT',
+        '超ドパRUSH',
+        'PREMIUM確定',
       ];
-      final preAlertPairs = [
-        ('先 読 み 発 生', '数字がざわついています'),
-        ('保留変化!!', '色が変わった!?'),
-        ('違和感発生', '何かが違う...'),
-        ('激ザワ!!', '盤面が騒がしい'),
-      ];
-      final lockPairs = [
-        ('超・確・定', '7系プレミアム確認中'),
-        ('擬似連×2', 'もう一度!'),
-        ('擬似連×3', '止まらない!!'),
-        ('金保留!!', '虹の前兆'),
-      ];
-      final preAlert = _pick(preAlertPairs);
-      final lock = _pick(lockPairs);
-      final revivalHead = _pick(revivalHeadlines);
-      final jackpotHead = _pick(jackpotHeadlines);
-      final jackpotSub = _pick(jackpotSublines);
-      // variantでサブタイトルの強さを変える
+      final jackpotSublines = ['答えは最初から決まっている', '虹色に輝け', '全てを解放する', 'ここからが本番'];
       final openers = [
         ('・・・・・・', '何かがおかしい'),
         ('ざわ・・・', '空気が変わった'),
@@ -202,6 +213,7 @@ class EffectDirector {
         ('キュイン!!', '先バレ!?'),
       ];
       final opener = openers[premiumVariant];
+
       return EffectPlan(
         rank: EffectRank.premium,
         beats: [
@@ -211,38 +223,63 @@ class EffectDirector {
             duration: const Duration(milliseconds: 900),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
+            visualState: const EffectVisualState(holdStage: HoldStage.blue),
           ),
           EffectBeat(
-            headline: preAlert.$1,
-            subline: preAlert.$2,
+            headline: '保留変化!!',
+            subline: _pick(['青→緑へ昇格', '保留が育った', '先読み継続']),
             duration: const Duration(milliseconds: 1100),
             intensity: EffectIntensity.medium,
             displayRank: EffectRank.chance,
             cue: EffectCue.preAlert,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.green,
+              pseudoCount: 1,
+              lockedSymbols: 1,
+            ),
           ),
           EffectBeat(
-            headline: lock.$1,
-            subline: lock.$2,
+            headline: '擬似連×2',
+            subline: _pick(['赤保留へ昇格', 'もう一度!!', '期待度が跳ね上がる']),
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.symbolLock,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.red,
+              pseudoCount: 2,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.red,
+            ),
           ),
           EffectBeat(
             headline: '押 せ',
-            subline: _pick(['PUSHで運命を決めろ', '連打で未来を掴め', '一撃で決めろ!!']),
+            subline: _pick(['擬似連×3・金保留', '金まで育った!!', '一撃で決めろ!!']),
             duration: const Duration(milliseconds: 900),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.pushPrompt,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+            ),
           ),
           EffectBeat(
             headline: _pick(['役 物 閉 鎖', 'シャッター閉鎖', '完全包囲']),
-            subline: _pick(['逃げ道を封鎖しています', 'もう戻れない', '覚悟はいいか']), // variation
+            subline: _pick(['判定を隠します', '一度終わったように見せる', '覚悟はいいか']),
             duration: const Duration(milliseconds: 650),
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.shutter,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.fakeout,
+            ),
           ),
           EffectBeat(
             headline: '…………',
@@ -252,50 +289,83 @@ class EffectDirector {
             displayRank: EffectRank.normal,
             cue: EffectCue.blackout,
             dark: true,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.fakeout,
+            ),
           ),
           EffectBeat(
-            headline: revivalHead,
+            headline: _pick(revivalHeadlines),
             subline: _pick(['まだ終わってない', 'ここからだ', '奇跡を起こせ', '立ち上がれ!!']),
             duration: const Duration(milliseconds: 1100),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.revival,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.revival,
+            ),
           ),
           EffectBeat(
-            headline: jackpotHead,
-            subline: jackpotSub,
+            headline: _pick(jackpotHeadlines),
+            subline: _pick(jackpotSublines),
             duration: const Duration(milliseconds: 2500),
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.premium,
             cue: EffectCue.jackpot,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.rainbow,
+              pseudoCount: 3,
+              lockedSymbols: 3,
+              symbolStyle: SymbolStyle.seven,
+              revealState: RevealState.confirmed,
+            ),
           ),
         ],
       );
     }
 
     if (canonical == '0') {
-      return EffectPlan(
+      return const EffectPlan(
         rank: EffectRank.gekiatsu,
         beats: [
           EffectBeat(
             headline: '全 消 灯',
             subline: '画面が仕事をやめました',
-            duration: const Duration(milliseconds: 1500),
+            duration: Duration(milliseconds: 1500),
             intensity: EffectIntensity.high,
             cue: EffectCue.preAlert,
+            visualState: EffectVisualState(
+              holdStage: HoldStage.red,
+              lockedSymbols: 1,
+              symbolStyle: SymbolStyle.red,
+            ),
           ),
           EffectBeat(
             headline: '…………',
             subline: 'からの？',
-            duration: const Duration(milliseconds: 1200),
+            duration: Duration(milliseconds: 1200),
             intensity: EffectIntensity.medium,
+            visualState: EffectVisualState(revealState: RevealState.fakeout),
           ),
           EffectBeat(
             headline: '復 活',
             subline: 'そして答えは0',
-            duration: const Duration(milliseconds: 1800),
+            duration: Duration(milliseconds: 1800),
             intensity: EffectIntensity.high,
             cue: EffectCue.revival,
+            visualState: EffectVisualState(
+              holdStage: HoldStage.gold,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.revival,
+            ),
           ),
         ],
       );
@@ -303,52 +373,80 @@ class EffectDirector {
 
     final roll = _roll(100);
     if (roll == 0) {
-      // 1%ランダムPREMIUMも毎回バリエーションを持たせる
-      final heads = ['違 和 感', '虹の予感', '金保留降臨', '激震!!'];
-      final subs = ['ただの計算では終わらない', '虹色に染まる', 'プレミアムの鼓動', '運命の1%'];
       return EffectPlan(
         rank: EffectRank.premium,
         beats: [
           EffectBeat(
-            headline: _pick(heads),
-            subline: _pick(subs),
+            headline: _pick(['違 和 感', '虹の予感', '金保留降臨', '激震!!']),
+            subline: _pick(['ただの計算では終わらない', '先読み開始', 'プレミアムの鼓動', '運命の1%']),
             duration: const Duration(milliseconds: 900),
             intensity: EffectIntensity.medium,
             displayRank: EffectRank.chance,
             cue: EffectCue.preAlert,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.green,
+              pseudoCount: 1,
+              lockedSymbols: 1,
+            ),
           ),
           EffectBeat(
-            headline: _pick(['激 熱', '灼熱!!', '超激熱']),
-            subline: '期待度 92%（演出上）',
+            headline: '擬似連×2',
+            subline: _pick(['赤保留へ昇格', '激熱まで上昇', 'まだ伸びる']),
             duration: const Duration(milliseconds: 1100),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.symbolLock,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.red,
+              pseudoCount: 2,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.red,
+            ),
           ),
           EffectBeat(
             headline: '押 せ',
-            subline: _pick(['PUSHでプレミアムを呼べ', '叩け!!', '魂を込めろ']),
+            subline: _pick(['擬似連×3・金保留', '金まで昇格!!', '魂を込めろ']),
             duration: const Duration(milliseconds: 800),
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.pushPrompt,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+            ),
           ),
-          EffectBeat(
-            headline: _pick(['役 物 閉 鎖', '扉閉鎖']),
+          const EffectBeat(
+            headline: '役 物 閉 鎖',
             subline: 'まだ結果は見せません',
-            duration: const Duration(milliseconds: 550),
+            duration: Duration(milliseconds: 550),
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.shutter,
+            visualState: EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.fakeout,
+            ),
           ),
-          EffectBeat(
+          const EffectBeat(
             headline: '…………',
             subline: '',
-            duration: const Duration(milliseconds: 650),
+            duration: Duration(milliseconds: 650),
             intensity: EffectIntensity.low,
             displayRank: EffectRank.normal,
             cue: EffectCue.blackout,
             dark: true,
+            visualState: EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.fakeout,
+            ),
           ),
           EffectBeat(
             headline: _pick(['復 活', '覚醒', '再始動']),
@@ -357,6 +455,13 @@ class EffectDirector {
             intensity: EffectIntensity.high,
             displayRank: EffectRank.gekiatsu,
             cue: EffectCue.revival,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 3,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.revival,
+            ),
           ),
           EffectBeat(
             headline: _pick(['超 計 算', '超ドパRUSH', '虹JACKPOT']),
@@ -365,10 +470,18 @@ class EffectDirector {
             intensity: EffectIntensity.extreme,
             displayRank: EffectRank.premium,
             cue: EffectCue.jackpot,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.rainbow,
+              pseudoCount: 3,
+              lockedSymbols: 3,
+              symbolStyle: SymbolStyle.seven,
+              revealState: RevealState.confirmed,
+            ),
           ),
         ],
       );
     }
+
     if (roll < 10) {
       final gekiHeads = ['激 熱', '灼熱', '超激熱', '激アツ!!'];
       final chanceSubs = ['期待しても計算結果は変わりません', 'それでも期待させる', '煽りは本気'];
@@ -381,60 +494,94 @@ class EffectDirector {
             duration: const Duration(milliseconds: 1000),
             intensity: EffectIntensity.high,
             cue: EffectCue.preAlert,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.green,
+              pseudoCount: 1,
+              lockedSymbols: 1,
+            ),
           ),
           EffectBeat(
             headline: _pick(gekiHeads),
-            subline: _pick(['期待度 92%（演出上）', '信頼度MAX', '外したらごめん']),
+            subline: _pick(['赤保留・擬似連×2', '期待度上昇中', '外したらごめん']),
             duration: const Duration(milliseconds: 1200),
             intensity: EffectIntensity.extreme,
             cue: EffectCue.symbolLock,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.red,
+              pseudoCount: 2,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.red,
+            ),
           ),
           EffectBeat(
             headline: '押 せ',
-            subline: _pick(['PUSHで復活を呼び込め', '連打!!', '魂のPUSH']),
+            subline: _pick(['金まで昇格!!', '連打!!', '魂のPUSH']),
             duration: const Duration(milliseconds: 900),
             intensity: EffectIntensity.high,
             cue: EffectCue.pushPrompt,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 2,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+            ),
           ),
           EffectBeat(
             headline: _pick(['まだだ！！', '終わらんよ', 'もう一発']),
-            subline: _pick(['無駄にもう一回煽ります', 'しつこい演出', '諦めない心']),
+            subline: _pick(['復活で押し切る', 'しつこい演出', '諦めない心']),
             duration: const Duration(milliseconds: 1700),
             intensity: EffectIntensity.high,
             cue: EffectCue.revival,
-          ),
-        ],
-      );
-    }
-    if (roll < 30) {
-      return EffectPlan(
-        rank: EffectRank.chance,
-        beats: [
-          EffectBeat(
-            headline: 'CHANCE',
-            subline: 'ただの計算なのに期待度UP',
-            duration: const Duration(milliseconds: 1200),
-            intensity: EffectIntensity.medium,
-            cue: EffectCue.preAlert,
-          ),
-          EffectBeat(
-            headline: '計 算 リ ー チ',
-            subline: '答えを出すだけです',
-            duration: const Duration(milliseconds: 1800),
-            intensity: EffectIntensity.medium,
-            cue: EffectCue.symbolLock,
+            visualState: const EffectVisualState(
+              holdStage: HoldStage.gold,
+              pseudoCount: 2,
+              lockedSymbols: 2,
+              symbolStyle: SymbolStyle.gold,
+              revealState: RevealState.revival,
+            ),
           ),
         ],
       );
     }
 
-    return EffectPlan(
+    if (roll < 30) {
+      return const EffectPlan(
+        rank: EffectRank.chance,
+        beats: [
+          EffectBeat(
+            headline: 'CHANCE',
+            subline: '青保留から期待度UP',
+            duration: Duration(milliseconds: 1200),
+            intensity: EffectIntensity.medium,
+            cue: EffectCue.preAlert,
+            visualState: EffectVisualState(
+              holdStage: HoldStage.blue,
+              lockedSymbols: 1,
+            ),
+          ),
+          EffectBeat(
+            headline: '計 算 リ ー チ',
+            subline: '緑保留・擬似連×1',
+            duration: Duration(milliseconds: 1800),
+            intensity: EffectIntensity.medium,
+            cue: EffectCue.symbolLock,
+            visualState: EffectVisualState(
+              holdStage: HoldStage.green,
+              pseudoCount: 1,
+              lockedSymbols: 2,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return const EffectPlan(
       rank: EffectRank.normal,
       beats: [
         EffectBeat(
           headline: '計 算 中',
           subline: '無駄に溜めています',
-          duration: const Duration(milliseconds: 1400),
+          duration: Duration(milliseconds: 1400),
           intensity: EffectIntensity.low,
         ),
       ],

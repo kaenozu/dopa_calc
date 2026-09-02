@@ -224,5 +224,33 @@ void main() {
       expect(fakeHaptics.calls, ['medium']);
       expect(fakeSound.stopCalls, 1);
     });
+
+    test('cancelPendingで遅延JACKPOTを途中キャンセルする', () async {
+      final delayStarted = Completer<void>();
+      final releaseDelay = Completer<void>();
+      final cancelPlayer = EffectPlayer(
+        soundManager: fakeSound,
+        haptics: fakeHaptics,
+        delay: (_) {
+          if (!delayStarted.isCompleted) delayStarted.complete();
+          return releaseDelay.future;
+        },
+      );
+      addTearDown(cancelPlayer.dispose);
+
+      final playing = cancelPlayer.playBeat(
+        EffectRank.premium,
+        const BeatEvent(beatIndex: 7, intensity: EffectIntensity.extreme),
+        cue: EffectCue.jackpot,
+      );
+      await delayStarted.future;
+
+      await cancelPlayer.cancelPending();
+      releaseDelay.complete();
+      await playing;
+
+      expect(fakeHaptics.calls, ['vibrate']);
+      expect(fakeSound.stopCalls, 1);
+    });
   });
 }

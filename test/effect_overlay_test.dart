@@ -16,6 +16,13 @@ EffectPlan _premiumPlan() {
         duration: Duration(seconds: 5),
         intensity: EffectIntensity.extreme,
         cue: EffectCue.jackpot,
+        visualState: EffectVisualState(
+          holdStage: HoldStage.rainbow,
+          pseudoCount: 3,
+          lockedSymbols: 3,
+          symbolStyle: SymbolStyle.seven,
+          revealState: RevealState.confirmed,
+        ),
       ),
     ],
   );
@@ -152,7 +159,32 @@ void main() {
     expect(find.text('777 JACKPOT'), findsOneWidget);
     expect(find.text('JACKPOT'), findsOneWidget);
     expect(find.byKey(const Key('pachinko-revival-burst')), findsOneWidget);
+    expect(find.byKey(const Key('pachinko-jackpot-sequence')), findsOneWidget);
+    expect(find.byKey(const Key('hold-stage-rainbow')), findsOneWidget);
+    expect(find.byKey(const Key('pseudo-count-3')), findsOneWidget);
+    expect(find.byKey(const Key('reveal-state-confirmed')), findsOneWidget);
     expect(find.text('演出SKIP'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('期待度状態が青→緑→赤へ画面上でも昇格する', (tester) async {
+    final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
+
+    await tester.pumpWidget(_testApp(plan: plan, disableAnimations: true));
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(find.byKey(const Key('hold-stage-blue')), findsOneWidget);
+    expect(find.byKey(const Key('pseudo-count-1')), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.byKey(const Key('hold-stage-green')), findsOneWidget);
+    expect(find.byKey(const Key('pseudo-count-1')), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(find.byKey(const Key('hold-stage-red')), findsOneWidget);
+    expect(find.byKey(const Key('pseudo-count-2')), findsOneWidget);
+    expect(find.byKey(const Key('locked-symbol-red-0')), findsOneWidget);
+    expect(find.byKey(const Key('locked-symbol-red-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
