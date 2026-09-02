@@ -90,9 +90,7 @@ class _PushPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final countdown = _countdownFor(progress);
-    final wave = reduceMotion
-        ? 0.6
-        : (math.sin(phase * math.pi * 8) + 1) / 2;
+    final wave = reduceMotion ? 0.6 : (math.sin(phase * math.pi * 8) + 1) / 2;
     final scale = reduceMotion ? 1.0 : 0.94 + wave * 0.1;
 
     return Stack(
@@ -384,7 +382,9 @@ class _JackpotSequence extends StatelessWidget {
     final impactProgress = (progress / 0.16).clamp(0.0, 1.0).toDouble();
     final landingProgress = (progress / 0.38).clamp(0.0, 1.0).toDouble();
     final auraProgress = ((progress - 0.28) / 0.34).clamp(0.0, 1.0).toDouble();
-    final confirmProgress = ((progress - 0.62) / 0.2).clamp(0.0, 1.0).toDouble();
+    final confirmProgress = ((progress - 0.62) / 0.2)
+        .clamp(0.0, 1.0)
+        .toDouble();
     final flash = reduceMotion
         ? 0.0
         : (1 - Curves.easeOut.transform(impactProgress)) * 0.76;
@@ -400,9 +400,7 @@ class _JackpotSequence extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (flash > 0.001)
-          ColoredBox(
-            color: Colors.white.withValues(alpha: flash),
-          ),
+          ColoredBox(color: Colors.white.withValues(alpha: flash)),
         Center(
           child: Opacity(
             opacity: (0.14 + auraProgress * 0.5).clamp(0.0, 0.64).toDouble(),
@@ -432,7 +430,10 @@ class _JackpotSequence extends StatelessWidget {
             child: Opacity(
               opacity: Curves.easeIn.transform(confirmProgress),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.72),
                   borderRadius: BorderRadius.circular(999),
