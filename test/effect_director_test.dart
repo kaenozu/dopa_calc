@@ -71,6 +71,47 @@ void main() {
       ]);
     });
 
+    test('PREMIUMは青→緑→赤→金→虹へ保留昇格する', () {
+      final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
+      final stages = plan.beats.map((beat) => beat.visualState.holdStage).toList();
+
+      expect(stages, [
+        HoldStage.blue,
+        HoldStage.green,
+        HoldStage.red,
+        HoldStage.gold,
+        HoldStage.gold,
+        HoldStage.gold,
+        HoldStage.gold,
+        HoldStage.rainbow,
+      ]);
+    });
+
+    test('PREMIUMは擬似連を×1→×2→×3へ積み上げる', () {
+      final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
+      final counts = plan.beats.map((beat) => beat.visualState.pseudoCount).toList();
+
+      expect(counts, [0, 1, 2, 3, 3, 3, 3, 3]);
+    });
+
+    test('PREMIUMだけ最終段で7図柄と虹確定を解禁する', () {
+      final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
+
+      expect(
+        plan.beats.take(7).any(
+          (beat) => beat.visualState.symbolStyle == SymbolStyle.seven,
+        ),
+        isFalse,
+      );
+      expect(plan.beats.last.visualState.symbolStyle, SymbolStyle.seven);
+      expect(plan.beats.last.visualState.lockedSymbols, 3);
+      expect(plan.beats.last.visualState.holdStage, HoldStage.rainbow);
+      expect(
+        plan.beats.last.visualState.revealState,
+        RevealState.confirmed,
+      );
+    });
+
     test('PREMIUMシーケンスはPUSHとシャッターを経てJACKPOTへ進行する', () {
       final director = EffectDirector(nextInt: (_) => 55);
       final plan = director.planFor('777');
@@ -119,10 +160,12 @@ void main() {
       final plan = director.planFor('777');
       final darkBeat = plan.beats[5];
       expect(plan.beats[4].cue, EffectCue.shutter);
+      expect(plan.beats[4].visualState.revealState, RevealState.fakeout);
       expect(darkBeat.dark, isTrue);
       expect(darkBeat.cue, EffectCue.blackout);
       expect(darkBeat.headline, '…………');
       expect(darkBeat.intensity, EffectIntensity.low);
+      expect(darkBeat.visualState.revealState, RevealState.fakeout);
     });
 
     test('PREMIUMシーケンスのビートは全てheadlineとsublineを持つ', () {
@@ -170,6 +213,8 @@ void main() {
       expect(plan.beats[5].cue, EffectCue.revival);
       expect(plan.beats.last.displayRank, EffectRank.premium);
       expect(plan.beats.last.cue, EffectCue.jackpot);
+      expect(plan.beats.last.visualState.symbolStyle, SymbolStyle.seven);
+      expect(plan.beats.last.visualState.holdStage, HoldStage.rainbow);
     });
 
     test('激熱にはPUSHがありCHANCEにはPUSHがない', () {
@@ -188,6 +233,20 @@ void main() {
         gekiatsu.beats.any((beat) => beat.cue == EffectCue.shutter),
         isFalse,
       );
+    });
+
+    test('CHANCEと激熱では7図柄を使わない', () {
+      final gekiatsu = EffectDirector(nextInt: (_) => 5).planFor('1');
+      final chance = EffectDirector(nextInt: (_) => 25).planFor('1');
+
+      for (final plan in [chance, gekiatsu]) {
+        expect(
+          plan.beats.any(
+            (beat) => beat.visualState.symbolStyle == SymbolStyle.seven,
+          ),
+          isFalse,
+        );
+      }
     });
   });
 }
