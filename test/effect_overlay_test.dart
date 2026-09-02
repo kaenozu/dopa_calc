@@ -170,9 +170,7 @@ void main() {
   testWidgets('期待度状態が青→緑→赤へ画面上でも昇格する', (tester) async {
     final plan = EffectDirector(nextInt: (_) => 55).planFor('777');
 
-    await tester.pumpWidget(
-      _testApp(plan: plan, disableAnimations: true),
-    );
+    await tester.pumpWidget(_testApp(plan: plan, disableAnimations: true));
     await tester.pump(const Duration(milliseconds: 16));
 
     expect(find.byKey(const Key('hold-stage-blue')), findsOneWidget);
