@@ -84,10 +84,7 @@ class EdgeFrame extends StatelessWidget {
         padding: const EdgeInsets.all(5),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(
-              color: accent.withValues(alpha: 0.68),
-              width: 3,
-            ),
+            border: Border.all(color: accent.withValues(alpha: 0.68), width: 3),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -332,9 +329,7 @@ class HeadlineCard extends StatelessWidget {
     final theme = rank.theme;
     final targetSize = theme.headlineSize;
     final letterSpacing = theme.letterSpacing;
-    final tilt = reduceMotion
-        ? 0.0
-        : math.sin(phase * math.pi * 4) * 0.006;
+    final tilt = reduceMotion ? 0.0 : math.sin(phase * math.pi * 4) * 0.006;
 
     if (dark) {
       return Container(
@@ -375,9 +370,7 @@ class HeadlineCard extends StatelessWidget {
           Transform.scale(
             scale: reduceMotion
                 ? 1.0
-                : 1.0 +
-                      0.08 *
-                          (0.5 + 0.5 * math.sin(phase * math.pi * 4)),
+                : 1.0 + 0.08 * (0.5 + 0.5 * math.sin(phase * math.pi * 4)),
             child: Container(
               decoration: BoxDecoration(
                 boxShadow: [
@@ -555,10 +548,7 @@ class HeadlineCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 90,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: headlineWidget,
-                ),
+                child: FittedBox(fit: BoxFit.scaleDown, child: headlineWidget),
               ),
               const SizedBox(height: 8),
               Text(
@@ -587,10 +577,7 @@ class HeadlineCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: accent.withValues(alpha: 0.74),
-            width: 2,
-          ),
+          border: Border.all(color: accent.withValues(alpha: 0.74), width: 2),
           boxShadow: [
             BoxShadow(
               color: accent.withValues(alpha: 0.58),
@@ -610,10 +597,7 @@ class HeadlineCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: targetSize * 1.42,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: headlineWidget,
-              ),
+              child: FittedBox(fit: BoxFit.scaleDown, child: headlineWidget),
             ),
             const SizedBox(height: 14),
             Text(
