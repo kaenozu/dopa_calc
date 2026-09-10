@@ -9,7 +9,7 @@ plugins {
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.isFile) {
-        keystorePropertiesFile.inputStream().use(::load)
+        keystorePropertiesFile.inputStream().use { load(it) }
     }
 }
 val requiredSigningProperties = listOf(
