@@ -27,7 +27,10 @@ class CelebrationPainter extends CustomPainter {
     final isPremium = rank == EffectRank.premium;
     final particleBoost = isPremium ? 28 : 0;
     final rayBoost = isPremium ? 16 : 0;
-    final particleCount = (16 + 22 * rank.index + 16 * impact + particleBoost).round().clamp(16, 128).toInt();
+    final particleCount = (16 + 22 * rank.index + 16 * impact + particleBoost)
+        .round()
+        .clamp(16, 128)
+        .toInt();
     final rayCount = (12 + 12 * rank.index + rayBoost).clamp(12, 64).toInt();
     final center = size.center(Offset.zero);
     _drawRings(canvas, center, size, impact * (isPremium ? 1.35 : 1.0));
@@ -37,7 +40,12 @@ class CelebrationPainter extends CustomPainter {
     if (isPremium) _drawPremiumStarburst(canvas, center, size, impact);
   }
 
-  void _drawPremiumStarburst(Canvas canvas, Offset center, Size size, double impact) {
+  void _drawPremiumStarburst(
+    Canvas canvas,
+    Offset center,
+    Size size,
+    double impact,
+  ) {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -48,7 +56,11 @@ class CelebrationPainter extends CustomPainter {
       paint
         ..strokeWidth = 1.8 + impact * 2.2
         ..color = Colors.white.withValues(alpha: 0.08 + 0.16 * impact);
-      canvas.drawLine(center, center + Offset(math.cos(angle) * r, math.sin(angle) * r), paint);
+      canvas.drawLine(
+        center,
+        center + Offset(math.cos(angle) * r, math.sin(angle) * r),
+        paint,
+      );
     }
   }
 

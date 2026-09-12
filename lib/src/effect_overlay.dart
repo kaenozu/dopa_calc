@@ -170,11 +170,19 @@ class _EffectOverlayState extends State<EffectOverlay>
     };
   }
 
+  EffectVisualState _resultVisualState(EffectPlan plan, EffectRank rank) {
+    if (rank == EffectRank.premium) {
+      return plan.beats.last.visualState;
+    }
+    return const EffectVisualState();
+  }
+
   Widget _buildResultClimax(EffectPlan plan) {
     final finalRank = plan.rankForBeat(plan.beats.length - 1);
     final theme = finalRank.theme;
     final intensity = _resultIntensity(finalRank);
     final resultCue = _resultCue(finalRank);
+    final resultVisualState = _resultVisualState(plan, finalRank);
 
     return Positioned.fill(
       child: Material(
@@ -226,6 +234,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                   PachinkoMachineOverlay(
                     cue: resultCue,
                     rank: finalRank,
+                    visualState: resultVisualState,
                     accent: accent,
                     phase: phase,
                     impact: impact,
@@ -352,6 +361,7 @@ class _EffectOverlayState extends State<EffectOverlay>
                     PachinkoMachineOverlay(
                       cue: beat.cue,
                       rank: effectiveRank,
+                      visualState: beat.visualState,
                       accent: accent,
                       phase: phase,
                       impact: impact,
