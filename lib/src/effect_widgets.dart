@@ -364,7 +364,6 @@ class HeadlineCard extends StatelessWidget {
     // 画像化: JACKPOTは虹色脈動、symbolLockは7画像でリッチに（テスト互換の隠しテキストも保持）
     Widget headlineWidget;
     if (_isJackpotImage) {
-      final pulse = reduceMotion ? 1.0 : 0.92 + 0.08 * (1 + (phase * 2 % 1));
       final huePulse = reduceMotion ? 0.0 : (phase * 60) % 60;
       headlineWidget = Stack(
         alignment: Alignment.center,

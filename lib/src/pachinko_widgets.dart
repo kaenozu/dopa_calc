@@ -245,12 +245,13 @@ class ResultClimax extends StatelessWidget {
             builder: (context) {
               final lb = rankLabel.toUpperCase();
               String? banner;
-              if (lb.contains('PREMIUM'))
+              if (lb.contains('PREMIUM')) {
                 banner = 'assets/images/premium_banner.png';
-              else if (lb.contains('激'))
+              } else if (lb.contains('激')) {
                 banner = 'assets/images/gekiatsu_banner.png';
-              else if (lb.contains('CHANCE'))
+              } else if (lb.contains('CHANCE')) {
                 banner = 'assets/images/chance_banner.png';
+              }
               if (banner != null) {
                 return Image.asset(
                   banner,

@@ -287,6 +287,8 @@ class _ImageShutterPanel extends StatelessWidget {
   }
 }
 
+// Retained for the cinematic shutter variant; currently not wired into the active path.
+// ignore: unused_element
 class _ShutterPanel extends StatelessWidget {
   const _ShutterPanel({
     required this.accent,
