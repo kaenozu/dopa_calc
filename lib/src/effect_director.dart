@@ -170,13 +170,13 @@ class EffectDirector {
       // PREMIUMは毎回少し違う顔を見せる（保留変化・疑似連イメージでバリエーション）
       final premiumVariant = _roll(4);
       final revivalHeadlines = ['復 活', 'まだだ!!', '諦めるな', '起きろ!!'];
-      final jackpotHeadlines = ['ドパ計算RUSH', '777 JACKPOT', '超ドパRUSH', 'PREMIUM確定'];
-      final jackpotSublines = [
-        '答えは最初から決まっている',
-        '虹色に輝け',
-        '全てを解放する',
-        'ここからが本番',
+      final jackpotHeadlines = [
+        'ドパ計算RUSH',
+        '777 JACKPOT',
+        '超ドパRUSH',
+        'PREMIUM確定',
       ];
+      final jackpotSublines = ['答えは最初から決まっている', '虹色に輝け', '全てを解放する', 'ここからが本番'];
       final preAlertPairs = [
         ('先 読 み 発 生', '数字がざわついています'),
         ('保留変化!!', '色が変わった!?'),
