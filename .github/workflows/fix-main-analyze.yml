@@ -1,0 +1,63 @@
+name: fix main Dart analyze debt
+
+on:
+  push:
+    branches:
+      - chore/format-main-dart
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: chore/format-main-dart
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Apply non-semantic analyzer cleanup
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/src/effect_widgets.dart')
+          s = p.read_text()
+          old = '      final pulse = reduceMotion ? 1.0 : 0.92 + 0.08 * (1 + (phase * 2 % 1));\n'
+          if s.count(old) != 1:
+              raise SystemExit(f'effect_widgets pulse matches={s.count(old)}')
+          p.write_text(s.replace(old, ''))
+
+          p = Path('lib/src/pachinko_cinematic_widgets.dart')
+          s = p.read_text()
+          old = 'class _ShutterPanel extends StatelessWidget {\n'
+          new = '// Retained for the cinematic shutter variant; currently not wired into the active path.\n// ignore: unused_element\nclass _ShutterPanel extends StatelessWidget {\n'
+          if s.count(old) != 1:
+              raise SystemExit(f'ShutterPanel matches={s.count(old)}')
+          p.write_text(s.replace(old, new))
+
+          p = Path('lib/src/pachinko_widgets.dart')
+          s = p.read_text()
+          old = '''              if (lb.contains('PREMIUM'))\n                banner = 'assets/images/premium_banner.png';\n              else if (lb.contains('激'))\n                banner = 'assets/images/gekiatsu_banner.png';\n              else if (lb.contains('CHANCE'))\n                banner = 'assets/images/chance_banner.png';\n'''
+          new = '''              if (lb.contains('PREMIUM')) {\n                banner = 'assets/images/premium_banner.png';\n              } else if (lb.contains('激')) {\n                banner = 'assets/images/gekiatsu_banner.png';\n              } else if (lb.contains('CHANCE')) {\n                banner = 'assets/images/chance_banner.png';\n              }\n'''
+          if s.count(old) != 1:
+              raise SystemExit(f'banner chain matches={s.count(old)}')
+          p.write_text(s.replace(old, new))
+          PY
+          dart format lib/src/effect_widgets.dart lib/src/pachinko_cinematic_widgets.dart lib/src/pachinko_widgets.dart
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --debug
+      - name: Commit analyzer cleanup
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/effect_widgets.dart lib/src/pachinko_cinematic_widgets.dart lib/src/pachinko_widgets.dart
+          git commit -m "style: clear pre-existing Dart analyzer debt"
+          git push origin HEAD:chore/format-main-dart
